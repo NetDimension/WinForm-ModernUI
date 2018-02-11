@@ -6,13 +6,19 @@ It redrew borders of stardard WinForm, and make a dropshadow around the window. 
 
 ![Screen Shot](http://ohtrip.cn/media/20180212015259.jpg)
 
-# Features
+## Features
 - Make ModernUI-like Forms for .Net Windows Form Applications.
 - Full window animations support (Not just set FormBorderStyle to None).
 - Fast draw the dropshadow around the form.
 - Support Form Active/Inactive state.
 
-# Example
+## NuGet
+```
+PM> Install-Package NetDimension.WinForm.ModernUI
+```
+
+
+## Example
 
 
 ```C#
@@ -27,7 +33,7 @@ It redrew borders of stardard WinForm, and make a dropshadow around the window. 
 
 Change properties in "UI" category to make your form style as your wish.
 
-# Donate
+## Donate
 
 If you like my work, please buy me a cup of coffee to encourage me continue with this library. 
 ![Screen Shot](http://ohtrip.cn/media/beg_with_border.png)

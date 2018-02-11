@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // 有关程序集的一般信息由以下
 // 控制。更改这些特性值可修改
 // 与程序集关联的信息。
-[assembly: AssemblyTitle("NetDimension.WinForm.ModernUIForm")]
+[assembly: AssemblyTitle("NetDimension.WinForm.ModernUI")]
 [assembly: AssemblyDescription("Bring your .Net Winform to ModernUI style.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Net Dimension Studio")]
-[assembly: AssemblyProduct("NetDimension.WinForm.ModernUIForm")]
+[assembly: AssemblyProduct("NetDimension.WinForm.ModernUI")]
 [assembly: AssemblyCopyright("Copyright © Net Dimension Studio 2017 all rights resrved.")]
 [assembly: AssemblyTrademark("Net Dimension Studio")]
 [assembly: AssemblyCulture("")]
