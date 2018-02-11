@@ -46,9 +46,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FormShadow\FormGlowBorderDecorator.cs" />
+    <Compile Include="FormShadow\FormGlowBorderElement.cs" />
+    <Compile Include="FormShadow\FormShadow.cs" />
     <Compile Include="FormShadow\FormShadowDecorator.cs" />
     <Compile Include="FormShadow\FormShadowElement.cs" />
-    <Compile Include="Imports\DefMessages.cs" />
     <Compile Include="Imports\Win32APIs.cs" />
     <Compile Include="Imports\Win32Types.cs" />
     <Compile Include="Imports\WindowMessages.cs" />
@@ -76,11 +78,9 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
-    <None Include="Resources\donate_hand.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\MeckEd-PayPal-donate-button.png" />
+    <None Include="Resources\ShadowTemplate.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

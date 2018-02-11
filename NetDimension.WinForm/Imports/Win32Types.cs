@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 
 namespace NetDimension.Windows.Imports
 {
@@ -15,6 +16,7 @@ namespace NetDimension.Windows.Imports
 
 		internal static readonly IntPtr MESSAGE_HANDLED = new IntPtr(1);
 		internal static readonly IntPtr MESSAGE_PROCESS = new IntPtr(0);
+		internal static int CornerAreaSize = SystemInformation.FrameBorderSize.Width / 2;
 
 		internal static IntPtr MakeParam(IntPtr l, IntPtr h)
 		{
@@ -32,6 +34,89 @@ namespace NetDimension.Windows.Imports
 			return (dwValue >> 16) & 0xffff;
 		}
 
+		internal static POINT GetPostionFromPtr(IntPtr lparam)
+		{
+			var scaledX = (int)User32.LoWord(lparam);
+			var scaledY = (int)User32.HiWord(lparam);
+
+			var x = scaledX;
+			var y = scaledY;
+
+			return new POINT(x, y);
+		}
+
+		//internal static HitTest GetSizeMode(Form form, POINT point)
+		//{
+		//	HitTest mode = HitTest.HTCLIENT;
+
+		//	int x = point.x, y = point.y;
+
+		//	if (form.WindowState == FormWindowState.Normal && (form.FormBorderStyle == FormBorderStyle.SizableToolWindow || form.FormBorderStyle == FormBorderStyle.Sizable))
+		//	{
+		//		var rect = new RECT();
+		//		User32.GetWindowRect(form.Handle, ref rect);
+		//		mode = Win32.GetSizeMode(point, rect.Width, rect.Height);
+		//	}
+
+		//	return mode;
+		//}
+
+		internal static HitTest GetSizeMode(POINT point, int width, int height)
+		{
+			HitTest mode = HitTest.HTCLIENT;
+
+			int x = point.x, y = point.y;
+
+			if (x < CornerAreaSize & y < CornerAreaSize)
+			{
+				mode = HitTest.HTTOPLEFT;
+			}
+			else if (x < CornerAreaSize & y + CornerAreaSize > height - CornerAreaSize)
+			{
+				mode = HitTest.HTBOTTOMLEFT;
+
+			}
+			else if (x + CornerAreaSize > width - CornerAreaSize & y + CornerAreaSize > height - CornerAreaSize)
+			{
+				mode = HitTest.HTBOTTOMRIGHT;
+
+			}
+			else if (x + CornerAreaSize > width - CornerAreaSize & y < CornerAreaSize)
+			{
+				mode = HitTest.HTTOPRIGHT;
+
+			}
+			else if (x < CornerAreaSize)
+			{
+				mode = HitTest.HTLEFT;
+
+			}
+			else if (x + CornerAreaSize > width - CornerAreaSize)
+			{
+				mode = HitTest.HTRIGHT;
+
+			}
+			else if (y < CornerAreaSize)
+			{
+				mode = HitTest.HTTOP;
+
+			}
+			else if (y + CornerAreaSize > height - CornerAreaSize)
+			{
+				mode = HitTest.HTBOTTOM;
+			}
+
+			return mode;
+		}
+
+	}
+
+	public struct MARGINS                           // struct for box shadow
+	{
+		public int leftWidth;
+		public int rightWidth;
+		public int topHeight;
+		public int bottomHeight;
 	}
 	internal enum ABMsg : int
 	{
@@ -46,6 +131,12 @@ namespace NetDimension.Windows.Imports
 		ABM_SETAUTOHIDEBAR,
 		ABM_WINDOWPOSCHANGED,
 		ABM_SETSTATE
+	}
+
+	public enum WindowActiveFlags:uint {
+		WA_INACTIVE = 0,
+		WA_ACTIVE = 1,
+		WA_CLICKACTIVE = 2
 	}
 
 	public enum ABEdge : int
@@ -976,7 +1067,7 @@ namespace NetDimension.Windows.Imports
 	}
 
 	[Flags]
-	public enum WindowStyles : uint
+	public enum WindowStyles : long
 	{
 		WS_OVERLAPPED = 0x00000000,
 		WS_POPUP = 0x80000000,
