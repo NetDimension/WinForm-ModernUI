@@ -106,7 +106,6 @@
 			this.Controls.Add(this.label1);
 			this.Font = new System.Drawing.Font("微软雅黑", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
 			this.InactiveShadowColor = System.Drawing.Color.FromArgb(((int)(((byte)(134)))), ((int)(((byte)(95)))), ((int)(((byte)(197)))));
-			this.MinimumSize = new System.Drawing.Size(640, 320);
 			this.Name = "frmMain";
 			this.ShadowEffect = NetDimension.WinForm.FormShadowType.DropShadow;
 			this.Text = "frmMain";

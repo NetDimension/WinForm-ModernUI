@@ -92,7 +92,7 @@ namespace NetDimension.WinForm
 		/// <summary>
 		/// 设置或获取NanUI窗体投影的样式
 		/// </summary>
-		[Category("ModernUI")]
+		[Category("NanUI")]
 		public FormShadowType ShadowEffect
 		{
 			get
@@ -137,6 +137,7 @@ namespace NetDimension.WinForm
 
 			if (isInitd)
 			{
+
 				shadowDecorator.InitializeShadows();
 			}
 		}
@@ -144,7 +145,7 @@ namespace NetDimension.WinForm
 		/// <summary>
 		/// 设置或获取NanUI在Nonclient模式下是否显示投影
 		/// </summary>
-		[Category("ModernUI")]
+		[Category("NanUI")]
 		public bool EnableFormShadow
 		{
 			get
@@ -168,7 +169,7 @@ namespace NetDimension.WinForm
 		/// <summary>
 		/// 设置或获取NanUI窗口边框线条粗细
 		/// </summary>
-		[Category("ModernUI")]
+		[Category("NanUI")]
 		public int BorderWidth
 		{
 			get; set;
@@ -177,7 +178,7 @@ namespace NetDimension.WinForm
 		/// <summary>
 		/// 设置或获取非活动状态窗口边框颜色
 		/// </summary>
-		[Category("ModernUI")]
+		[Category("NanUI")]
 		public Color InactiveBorderColor
 		{
 			get;
@@ -187,7 +188,7 @@ namespace NetDimension.WinForm
 		/// <summary>
 		/// 设置或获取活动状态窗口边框颜色
 		/// </summary>
-		[Category("ModernUI")]
+		[Category("NanUI")]
 		public Color ActiveBorderColor
 		{
 			get;
@@ -200,7 +201,7 @@ namespace NetDimension.WinForm
 		/// <summary>
 		/// 设置或获取活动状态窗口投影颜色
 		/// </summary>
-		[Category("ModernUI")]
+		[Category("NanUI")]
 		public Color ActiveShadowColor
 		{
 			get => activeShadowColor;
@@ -210,7 +211,7 @@ namespace NetDimension.WinForm
 		/// <summary>
 		/// 设置或获取非活动状态窗口投影颜色
 		/// </summary>
-		[Category("ModernUI")]
+		[Category("NanUI")]
 		public Color InactiveShadowColor
 		{
 			get => inactiveShadowColor;
@@ -228,7 +229,7 @@ namespace NetDimension.WinForm
 		{
 			isCustomFrameEnabled = enableModernUI;
 
-			shadowDecorator = (shadowType == FormShadowType.DropShadow? (IFormShadow)new FormShadowDecorator(this, false) : (IFormShadow)new FormGlowBorderDecorator(this,false));
+			shadowDecorator = (shadowType == FormShadowType.DropShadow ? (IFormShadow)new FormShadowDecorator(this, false) : (IFormShadow)new FormGlowBorderDecorator(this, false));
 
 			this.BackColor = Color.White;
 			if (!IsDesignMode)
@@ -804,8 +805,6 @@ namespace NetDimension.WinForm
 				this.isInitializing--;
 			if (this.isInitializing == 0)
 			{
-				CheckMinimumSize();
-				CheckMaximumSize();
 				CheckForceModernUIChangedCore();
 			}
 
@@ -886,7 +885,7 @@ namespace NetDimension.WinForm
 			if (WindowState != FormWindowState.Maximized)
 				return res;
 			var rect = new RECT(0, 0, res.Width, res.Height);
-			//Taskbar.CorrectRECTByAutoHide(ref rect);
+
 			return new Size(rect.Right, rect.Bottom);
 		}
 		private bool inScaleControl = false;
@@ -1230,6 +1229,7 @@ namespace NetDimension.WinForm
 				case WindowsMessages.WM_MOVE:
 					User32.InvalidateWindow(Handle);
 					break;
+
 				case WindowsMessages.WM_NCACTIVATE:
 					if (m.WParam == Win32.FALSE)
 					{
@@ -1382,14 +1382,15 @@ namespace NetDimension.WinForm
 
 				var mode = GetSizeMode(pos);
 
+
 				SetCursor(mode);
 				m.Result = (IntPtr)mode;
 
 
-				return true;
+				return false;
 			}
 
-			return false;
+			return true;
 		}
 
 		protected HitTest GetSizeMode(POINT point)
