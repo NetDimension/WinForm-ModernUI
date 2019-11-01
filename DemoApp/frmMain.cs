@@ -51,5 +51,21 @@ namespace DemoApp
 		{
 			Process.Start("https://github.com/NetDimension/WinForm-ModernUI");
 		}
-	}
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            this.WindowState = (this.WindowState == FormWindowState.Normal ? FormWindowState.Maximized : FormWindowState.Normal);
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            this.WindowState = (this.WindowState == FormWindowState.Normal ? FormWindowState.Minimized : FormWindowState.Normal);
+
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+    }
 }

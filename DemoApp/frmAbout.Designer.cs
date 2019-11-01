@@ -76,8 +76,8 @@
 			// 
 			// frmAbout
 			// 
-			this.ActiveBorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(85)))), ((int)(((byte)(50)))), ((int)(((byte)(138)))));
-			this.ActiveShadowColor = System.Drawing.Color.FromArgb(((int)(((byte)(134)))), ((int)(((byte)(95)))), ((int)(((byte)(197)))));
+			this.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(85)))), ((int)(((byte)(50)))), ((int)(((byte)(138)))));
+			this.ShadowColor = System.Drawing.Color.FromArgb(((int)(((byte)(134)))), ((int)(((byte)(95)))), ((int)(((byte)(197)))));
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
 			this.ClientSize = new System.Drawing.Size(478, 578);
 			this.Controls.Add(this.button2);
@@ -85,7 +85,6 @@
 			this.Controls.Add(this.pictureBox1);
 			this.Font = new System.Drawing.Font("微软雅黑", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
 			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-			this.InactiveShadowColor = System.Drawing.Color.FromArgb(((int)(((byte)(134)))), ((int)(((byte)(95)))), ((int)(((byte)(197)))));
 			this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
 			this.Name = "frmAbout";
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
