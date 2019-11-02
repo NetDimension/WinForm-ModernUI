@@ -152,7 +152,6 @@
             this.Font = new System.Drawing.Font("Microsoft YaHei", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.Name = "frmMain";
             this.ShadowColor = System.Drawing.Color.FromArgb(((int)(((byte)(134)))), ((int)(((byte)(95)))), ((int)(((byte)(197)))));
-            this.ShowInTaskbar = false;
             this.Text = "frmMain";
             this.ResumeLayout(false);
             this.PerformLayout();
