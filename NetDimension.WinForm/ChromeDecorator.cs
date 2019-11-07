@@ -455,7 +455,7 @@ namespace NetDimension.WinForm
                 isAnimationDelayed = true;
                 Task.Factory.StartNew(() =>
                 {
-                    System.Threading.Thread.Sleep(150);
+                    System.Threading.Thread.Sleep(300);
                     if (isAnimationDelayed)
                         parentWindow.Invoke(new MethodInvoker(action));
 

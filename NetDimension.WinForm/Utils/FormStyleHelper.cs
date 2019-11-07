@@ -15,6 +15,11 @@ namespace NetDimension.WinForm
             get { return (Environment.OSVersion.Version.Major < 6 || (Environment.OSVersion.Version.Major == 6 && Environment.Version.Minor < 3)); }
         }
 
+        public static bool IsWindows81OrHigher
+        {
+            get { return (Environment.OSVersion.Version.Major >= 6 || (Environment.OSVersion.Version.Major == 6 && Environment.Version.Minor >= 3)); }
+        }
+
         /// <summary>
         /// Gets the size of the borders requested by the real window.
         /// </summary>
@@ -47,45 +52,20 @@ namespace NetDimension.WinForm
 
         public static Padding ScalePadding(Padding value, SizeF scaleFactor)
         {
+            MidpointRounding mode = MidpointRounding.AwayFromZero;
+
+            if (scaleFactor.Width < 1f)
+            {
+                mode = MidpointRounding.ToEven;
+            }
+
+
+
             return new Padding(
                 (int)Math.Round(value.Left * scaleFactor.Width, MidpointRounding.AwayFromZero),
                 (int)Math.Round(value.Top * scaleFactor.Height, MidpointRounding.AwayFromZero),
                 (int)Math.Round(value.Right * scaleFactor.Width, MidpointRounding.AwayFromZero),
                 (int)Math.Round(value.Bottom * scaleFactor.Height, MidpointRounding.AwayFromZero));
-        }
-
-        public static Padding GetWindowRealNCMargin(Form f, CreateParams cp)
-        {
-            Win32.RECT boundsRect = new Win32.RECT();
-
-            Rectangle screenClient;
-
-            if (f.IsHandleCreated)
-            {
-                // RectangleToScreen will force handle creation and we don't want this during Form.ScaleControl
-                screenClient = f.RectangleToScreen(f.ClientRectangle);
-            }
-            else
-            {
-                screenClient = f.ClientRectangle;
-                screenClient.Offset(-f.Location.X, -f.Location.Y);
-            }
-
-            boundsRect.left = screenClient.Left;
-            boundsRect.top = screenClient.Top;
-            boundsRect.right = screenClient.Right;
-            boundsRect.bottom = screenClient.Bottom;
-            var hasMenu = f.MainMenuStrip != null;
-
-            Win32.AdjustWindowRectEx(ref boundsRect, cp.Style, hasMenu, cp.ExStyle);
-
-            Padding result = Padding.Empty;
-
-            result = new Padding(screenClient.Left - boundsRect.left, screenClient.Top - boundsRect.top, boundsRect.right - screenClient.Right, boundsRect.bottom - screenClient.Bottom);
-
-            return result;
-
-
         }
 
 

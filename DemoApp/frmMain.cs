@@ -49,7 +49,9 @@ namespace DemoApp
 
 		private void button2_Click(object sender, EventArgs e)
 		{
-			Process.Start("https://github.com/NetDimension/WinForm-ModernUI");
+            this.Location = new Point(400, 400);
+
+			//Process.Start("https://github.com/NetDimension/WinForm-ModernUI");
 		}
 
         private void button4_Click(object sender, EventArgs e)
@@ -59,7 +61,7 @@ namespace DemoApp
 
         private void button6_Click(object sender, EventArgs e)
         {
-            this.WindowState = (this.WindowState == FormWindowState.Normal ? FormWindowState.Minimized : FormWindowState.Normal);
+            this.WindowState = FormWindowState.Minimized;
 
         }
 
@@ -67,5 +69,7 @@ namespace DemoApp
         {
             this.Close();
         }
+
+
     }
 }
