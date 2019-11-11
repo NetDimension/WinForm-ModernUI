@@ -389,6 +389,7 @@ namespace NetDimension.WinForm
 
             this.MinimumSize = FormStyleHelper.ScaleSize(minSizeState, new SizeF(scaleFactor, scaleFactor));
             this.MaximumSize = FormStyleHelper.ScaleSize(maxSizeState, new SizeF(scaleFactor, scaleFactor));
+
         }
 
 
@@ -1683,9 +1684,10 @@ namespace NetDimension.WinForm
 
         protected override void OnResizeBegin(EventArgs e)
         {
+            this.isMoving = true;
+
             base.OnResizeBegin(e);
 
-            this.isMoving = true;
         }
 
         protected override void OnResizeEnd(EventArgs e)
@@ -1696,7 +1698,12 @@ namespace NetDimension.WinForm
 
             if (shouldScale)
             {
+                WriteConsoleLog($"[RESIZE END] {shouldScale} {DpiScaleFactor}");
+
+
                 shouldScale = false;
+
+
                 HandleDpiChanged();
             }
         }
@@ -1707,7 +1714,12 @@ namespace NetDimension.WinForm
 
             if (this.shouldScale && CanPerformScaling())
             {
+                WriteConsoleLog($"[MOVE CHANGE] {shouldScale} {DpiScaleFactor}");
+
+
                 this.shouldScale = false;
+
+
                 HandleDpiChanged();
             }
         }
@@ -1719,7 +1731,7 @@ namespace NetDimension.WinForm
 
             if (screen.Bounds.Contains(this.Bounds))
             {
-                WriteConsoleLog($"Form in [{screen}] is {screen.Bounds.Contains(this.Bounds)}");
+                //WriteConsoleLog($"Form in [{screen}] is {screen.Bounds.Contains(this.Bounds)}");
 
                 return true;
             }
@@ -1761,11 +1773,10 @@ namespace NetDimension.WinForm
 
 
 
-                        //if (this.IsDpiScalingSuspended/* || (!loaded && Owner != null)*/)
+                        //if (this.scaling/* || (!loaded && Owner != null)*/)
                         //{
                         //    return;
                         //}
-
 
                         oldDpi = currentDpi;
 
