@@ -6,6 +6,21 @@ It redrews borders of stardard WinForm, and make a dropshadow around the window.
 
 ![Screen Shot](http://ohtrip.cn/media/20180212015259.jpg)
 
+## 2019/11/11 更新 ##
+
+加入了对Win8.1/Win10的PerMonitor/PerMonitorV2的DPI相关API的支持.
+
+现在能过通过添加dpiAwareness属性来声明对不同DPI接口的支持。
+
+```
+    <application xmlns="urn:schemas-microsoft-com:asm.v3">
+        <windowsSettings>
+            <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>
+            <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true</dpiAware>
+        </windowsSettings>
+    </application>
+```
+
 ## 2019/11/2 更新 ##
 
 重新写了窗口底层解决了以下问题：
