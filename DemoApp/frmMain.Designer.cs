@@ -89,9 +89,9 @@
             this.button3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.button3.Location = new System.Drawing.Point(12, 351);
             this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(126, 35);
+            this.button3.Size = new System.Drawing.Size(178, 35);
             this.button3.TabIndex = 4;
-            this.button3.Text = "Glow Effect";
+            this.button3.Text = "DONATE ME!";
             this.button3.UseVisualStyleBackColor = true;
             this.button3.Click += new System.EventHandler(this.button3_Click);
             // 

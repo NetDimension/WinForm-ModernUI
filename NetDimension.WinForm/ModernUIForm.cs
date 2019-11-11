@@ -17,13 +17,13 @@ namespace NetDimension.WinForm
 
     public class ModernUIForm : Form
     {
-        
+
 
         private const int designTimeDpi = 96;
         private int oldDpi;
+        private int startupDpi;
         private int currentDpi;
         private bool scaling = false;
-        private bool isDpiScalingSuspended = false;
         private bool isMoving = false;
         private bool shouldScale = false;
         private bool loaded;
@@ -62,7 +62,7 @@ namespace NetDimension.WinForm
 
         private PROCESS_DPI_AWARENESS processDpiAwareness = PROCESS_DPI_AWARENESS.PROCESS_DPI_UNAWARE;
         private bool isPerMonitorAwareV2 = false;
-        
+
         internal ChromeDecorator shadowDecorator;
 
         #region Reflected
@@ -128,6 +128,27 @@ namespace NetDimension.WinForm
             }
             return PROCESS_DPI_AWARENESS.PROCESS_DPI_UNAWARE;
         }
+
+        [DllImport("User32.dll")]
+        private static extern IntPtr MonitorFromPoint([In]System.Drawing.Point pt, [In]uint dwFlags);
+
+        //https://msdn.microsoft.com/en-us/library/windows/desktop/dn280510(v=vs.85).aspx
+        [DllImport("Shcore.dll")]
+        private static extern IntPtr GetDpiForMonitor([In]IntPtr hmonitor, [In]DpiType dpiType, [Out]out uint dpiX, [Out]out uint dpiY);
+        private enum DpiType
+        {
+            Effective = 0,
+            Angular = 1,
+            Raw = 2,
+        }
+
+        private void GetDpiForScreen(System.Windows.Forms.Screen screen, DpiType dpiType, out uint dpiX, out uint dpiY)
+        {
+            var pnt = new System.Drawing.Point(screen.Bounds.Left + 1, screen.Bounds.Top + 1);
+            var mon = MonitorFromPoint(pnt, 2/*MONITOR_DEFAULTTONEAREST*/);
+            GetDpiForMonitor(mon, dpiType, out dpiX, out dpiY);
+        }
+
         #endregion
 
         #region Properties
@@ -236,7 +257,7 @@ namespace NetDimension.WinForm
                 ControlStyles.OptimizedDoubleBuffer, true);
 
             _screenDC = Win32.CreateCompatibleDC(IntPtr.Zero);
-            
+
 
             AutoScaleMode = AutoScaleMode.None;
 
@@ -251,56 +272,61 @@ namespace NetDimension.WinForm
 
             }
 
-            float dx, dy;
-            Graphics g = this.CreateGraphics();
+            processDpiAwareness = GetDpiState((uint)System.Diagnostics.Process.GetCurrentProcess().Id);
 
-            try
+            if (processDpiAwareness == PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE)
             {
-                dx = g.DpiX;
-                dy = g.DpiY;
-            }
-            finally
-            {
-                g.Dispose();
-            }
-
-            oldDpi = currentDpi;
-
-            currentDpi = (int)dx;
-
-            if (FormStyleHelper.IsWindows81OrHigher)
-            {
-
-                processDpiAwareness = GetDpiState((uint)System.Diagnostics.Process.GetCurrentProcess().Id);
-
-                if (processDpiAwareness == PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE)
+                try
                 {
-                    try
+
+                    var ret = (int)GetWindowDpiAwarenessContext(Handle);
+
+
+                    if (ret == 34)  // DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
                     {
-
-                        var ret = (int)GetWindowDpiAwarenessContext(Handle);
-
-
-                        if (ret == 34)  // DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
-                        {
-                            isPerMonitorAwareV2 = true;
-                        }
+                        isPerMonitorAwareV2 = true;
                     }
-                    catch
-                    {
-
-                    }
+                }
+                catch
+                {
 
                 }
+
             }
 
 
+            if (FormStyleHelper.IsWindows8OrLower)
+            {
+                float dx, dy;
+                Graphics g = this.CreateGraphics();
+
+                try
+                {
+                    dx = g.DpiX;
+                    dy = g.DpiY;
+                }
+                finally
+                {
+                    g.Dispose();
+                }
+
+                oldDpi = currentDpi;
+
+                startupDpi = currentDpi = (int)dx;
+
+            }
+            else
+            {
+                var currentScreen = Screen.FromHandle(Handle);
+                GetDpiForScreen(currentScreen, DpiType.Effective, out var dpiX, out var dpiY);
+
+                oldDpi = currentDpi;
+
+                startupDpi = currentDpi = (int)dpiX;
+            }
 
 
-            if (!IsDesignMode)
-                HandleDpiChanged();
-
-
+            WriteConsoleLog($"INITIALIZED DPI = {startupDpi}");
 
 
         }
@@ -324,6 +350,7 @@ namespace NetDimension.WinForm
         {
 
 
+
             float scaleFactor = 1f;
 
             if (oldDpi != 0)
@@ -331,16 +358,23 @@ namespace NetDimension.WinForm
                 scaleFactor = (float)currentDpi / oldDpi;
 
             }
-            else if (oldDpi == 0) //Form shown for the first time.
-            {
-                scaleFactor = (float)currentDpi / designTimeDpi;
+            //else if (oldDpi == 0) //Form shown for the first time.
+            //{
+            //    scaleFactor = (float)currentDpi / designTimeDpi;
 
-            }
+            //}
+
+            WriteConsoleLog($"DPI_SCALE_FACTOR = {scaleFactor}");
+
 
             if (scaleFactor == 1f)
             {
                 return;
             }
+
+
+
+
 
             this.maxSizeState = this.MaximumSize;
             this.minSizeState = this.MinimumSize;
@@ -349,26 +383,18 @@ namespace NetDimension.WinForm
 
             this.SaveAnchorStates();
 
-
             this.Scale(new SizeF(scaleFactor, scaleFactor));
 
-
             this.RestoreAnchorStates();
-
-
 
             this.MinimumSize = FormStyleHelper.ScaleSize(minSizeState, new SizeF(scaleFactor, scaleFactor));
             this.MaximumSize = FormStyleHelper.ScaleSize(maxSizeState, new SizeF(scaleFactor, scaleFactor));
         }
 
-       
+
 
         protected override void ScaleControl(SizeF factor, BoundsSpecified specified)
         {
-            if (factor == DpiScaleFactor || (factor.Width == 1f && factor.Height == 1f))
-            {
-                return;
-            }
 
             Rectangle rect = this.Bounds;
 
@@ -386,20 +412,10 @@ namespace NetDimension.WinForm
 
             DpiScaleChanged(factor);
 
-
-
-
-
             this.scaling = true;
-
-            this.Font = new Font(this.Font.FontFamily,
-                                   this.Font.Size * factor.Width,
-                                   this.Font.Style);
             ScaleFontForControl(this, factor.Width);
+
             base.ScaleControl(factor, specified);
-
-
-
 
 
             this.scaling = false;
@@ -410,17 +426,30 @@ namespace NetDimension.WinForm
 
         }
 
-        private static void ScaleFontForControl(Control control, float factor)
+        private void ScaleFontForControl(Control control, float factor)
         {
 
+            if (!loaded) return;
+
+            var oldFont = control.Font;
+            var newFont = new Font(control.Font.FontFamily,
+                   Convert.ToSingle(Math.Round(control.Font.Size * factor, 2, MidpointRounding.ToEven)),
+                   control.Font.Style);
 
 
-            if ((control.Parent != null && control.Font != control.Parent.Font))
+
+            if (control.Parent == null)
+            {
+                control.Font = newFont;
+                WriteConsoleLog($"[FORM FONT CHANGED]:{oldFont.Size} -> {control.Font.Size} {control.Font.Unit}");
+            }
+            else if (control.Font != control.TopLevelControl.Font)
             {
 
-                control.Font = new Font(control.Font.FontFamily,
-                   control.Font.Size * factor,
-                   control.Font.Style);
+                control.Font = newFont;
+
+
+                WriteConsoleLog($"[CONTROL FONT CHANGED]:{oldFont.Size} -> {control.Font.Size} {control.Font.Unit}");
             }
 
 
@@ -517,29 +546,10 @@ namespace NetDimension.WinForm
 
         protected override void ScaleCore(float x, float y)
         {
-
             MaximumClientSize = new Size((int)Math.Round(MaximumClientSize.Width * x), (int)Math.Round(MaximumClientSize.Height * y));
             base.ScaleCore(x, y);
             MinimumClientSize = new Size((int)Math.Round(MinimumClientSize.Width * x), (int)Math.Round(MinimumClientSize.Height * y));
-
         }
-
-        public bool IsDpiScalingSuspended
-        {
-            get { return this.isDpiScalingSuspended; }
-        }
-
-        public void SuspendDpiScaling()
-        {
-            this.isDpiScalingSuspended = true;
-        }
-
-        public void ResumeDpiScaling()
-        {
-            this.isDpiScalingSuspended = false;
-        }
-
-
 
 
         #endregion
@@ -1162,17 +1172,56 @@ namespace NetDimension.WinForm
 
 
             base.OnHandleCreated(e);
+
+
         }
 
         protected override void OnCreateControl()
         {
-            
+
 
             base.OnCreateControl();
 
 
 
+            if (startupDpi != designTimeDpi)
+            {
+                var factor = startupDpi / (float)designTimeDpi;
+
+                WriteConsoleLog($"STARTUP_SCALE_FACTOR = {factor}");
+
+                this.Scale(new SizeF(factor, factor));
+
+            }
+
+
+
             loaded = true;
+
+
+            HandleDpiChanged();
+
+            UpdateFormShadow();
+
+
+            if (!DesignMode)
+            {
+                if (StartPosition == FormStartPosition.CenterParent && Owner != null)
+                {
+                    Location = new Point(Owner.Location.X + Owner.Width / 2 - Width / 2,
+                    Owner.Location.Y + Owner.Height / 2 - Height / 2);
+
+                }
+                else if (StartPosition == FormStartPosition.CenterScreen || (StartPosition == FormStartPosition.CenterParent && Owner == null))
+                {
+                    var currentScreen = Screen.FromPoint(MousePosition);
+
+                    Location = new Point(currentScreen.WorkingArea.Left + (currentScreen.WorkingArea.Width / 2 - this.Width / 2), currentScreen.WorkingArea.Top + (currentScreen.WorkingArea.Height / 2 - this.Height / 2));
+
+                }
+
+
+            }
 
 
 
@@ -1185,30 +1234,16 @@ namespace NetDimension.WinForm
             base.OnLoad(e);
 
 
+
+
             OnMinimumClientSizeChanged();
             OnMaximumClientSizeChanged();
+
             CalcFormBounds();
 
-            UpdateFormShadow();
-
-            if (!IsDesignMode)
-            {
-                if (StartPosition == FormStartPosition.CenterParent && Owner != null)
-                {
-                    Location = new Point(Owner.Location.X + Owner.Width / 2 - Width / 2,
-                    Owner.Location.Y + Owner.Height / 2 - Height / 2);
 
 
-                }
-                else if (StartPosition == FormStartPosition.CenterScreen || (StartPosition == FormStartPosition.CenterParent && Owner == null))
-                {
-                    var currentScreen = Screen.FromPoint(MousePosition);
 
-                    this.Left = currentScreen.WorkingArea.Left + (currentScreen.WorkingArea.Width / 2 - this.Width / 2);
-                    this.Top = currentScreen.WorkingArea.Top + (currentScreen.WorkingArea.Height / 2 - this.Height / 2);
-
-                }
-            }
         }
 
         protected override void OnShown(EventArgs e)
@@ -1328,7 +1363,7 @@ namespace NetDimension.WinForm
 
         protected override void SetClientSizeCore(int x, int y)
         {
-            if ( !this.IsHandleCreated)
+            if (!this.IsHandleCreated)
             {
                 this.cachedClientSize = new Size(x, y);
                 base.SetClientSizeCore(x, y);
@@ -1351,9 +1386,11 @@ namespace NetDimension.WinForm
                 Rectangle formBounds = new Rectangle(new Point(0, 0), SizeFromClientSize(new Size(x, y)));
 
 
-                if (oldDpi == 0 && DpiScaleFactor.Width > 1f)
+                if (oldDpi == 0 && currentDpi != 0)
                 {
-                    formBounds = GetScaledBounds(formBounds, DpiScaleFactor, BoundsSpecified.Size);
+                    var scaleFactor = currentDpi / (float)designTimeDpi;
+
+                    //formBounds = GetScaledBounds(formBounds, new SizeF(scaleFactor, scaleFactor), BoundsSpecified.Size);
                 }
 
 
@@ -1582,7 +1619,7 @@ namespace NetDimension.WinForm
                 PatchClientSize();
             }
 
-            CalcFormBounds();
+            //CalcFormBounds();
 
 
             base.OnSizeChanged(e);
@@ -1604,6 +1641,13 @@ namespace NetDimension.WinForm
             fiWidth.SetValue(this, size.Width);
             fiHeight.SetValue(this, size.Height);
 
+        }
+
+        protected virtual void WriteConsoleLog(string message)
+        {
+#if DEBUG
+            Console.WriteLine(message);
+#endif
         }
 
         protected virtual Size GetConstrainSize(Size clientSize)
@@ -1672,8 +1716,11 @@ namespace NetDimension.WinForm
         {
             Screen screen = Screen.FromControl(this);
 
+
             if (screen.Bounds.Contains(this.Bounds))
             {
+                WriteConsoleLog($"Form in [{screen}] is {screen.Bounds.Contains(this.Bounds)}");
+
                 return true;
             }
 
@@ -1711,14 +1758,27 @@ namespace NetDimension.WinForm
                 switch (m.Msg)
                 {
                     case Win32.WM_DPICHANGED:
-                        if (this.IsDpiScalingSuspended)
+
+
+
+                        //if (this.IsDpiScalingSuspended/* || (!loaded && Owner != null)*/)
+                        //{
+                        //    return;
+                        //}
+
+
+                        oldDpi = currentDpi;
+
+                        currentDpi = (short)(int)m.WParam;
+
+                        WriteConsoleLog($"[WM_DPICHANGED]: {oldDpi} -> {currentDpi}");
+
+
+                        if (!loaded)
                         {
                             return;
                         }
-
-                        oldDpi = currentDpi;
-                        currentDpi = (short)(int)m.WParam;
-
+                                                
                         if (oldDpi != currentDpi)
                         {
                             if (this.isMoving)
@@ -1815,8 +1875,6 @@ namespace NetDimension.WinForm
                             // Update form with the reason for the close
                             pi.SetValue(this, CloseReason.UserClosing, null);
                         }
-
-
 
                         if ((int)m.WParam.ToInt64() != 61696)
                             processed = OnPaintNonClient(ref m);
@@ -2000,19 +2058,12 @@ namespace NetDimension.WinForm
                 return;
             }
 
-            Win32.RECT windowRect = new Win32.RECT();
 
-
-            Win32.GetWindowRect(Handle, ref windowRect);
-            Win32.OffsetRect(ref windowRect, -windowRect.left, -windowRect.top);
 
 
             Rectangle bounds = RealWindowRectangle;
 
-            Win32.GetClientRect(Handle, out var clientRect);
-            Rectangle clientBounds = new Rectangle(clientRect.left, clientRect.top, clientRect.right, clientRect.bottom);
-            clientBounds.Offset(-clientBounds.Left, -clientBounds.Top);
-            clientBounds.Offset(ClientMargin.Left, ClientMargin.Top);
+
 
 
 
@@ -2038,26 +2089,10 @@ namespace NetDimension.WinForm
                 if (hDC != IntPtr.Zero)
                 {
 
-
-                    var chromeRegion = new Region(bounds);
-
-                    if (WindowState == FormWindowState.Maximized)
-                    {
-                        chromeRegion.Exclude(bounds);
-                    }
-                    else
-                    {
-                        chromeRegion.Exclude(clientBounds);
-                    }
-
-
                     using (Graphics drawingSurface = Graphics.FromHdc(hDC))
                     {
-                        var borderColor = WindowActive ? BorderColor : InactiveBorderColor;
 
-
-
-                        drawingSurface.FillRegion(new SolidBrush(borderColor), chromeRegion);
+                        WindowChromePaint(drawingSurface, bounds);
 
                     }
                 }
@@ -2330,7 +2365,26 @@ namespace NetDimension.WinForm
         /// <param name="bounds">Bounds enclosing the window chrome.</param>
         protected virtual void WindowChromePaint(Graphics g, Rectangle bounds)
         {
-            g.FillRectangle(new SolidBrush(Color.Red), bounds);
+
+            Win32.GetClientRect(Handle, out var clientRect);
+            Rectangle clientBounds = new Rectangle(clientRect.left, clientRect.top, clientRect.right, clientRect.bottom);
+            clientBounds.Offset(-clientBounds.Left, -clientBounds.Top);
+            clientBounds.Offset(ClientMargin.Left, ClientMargin.Top);
+
+            var chromeRegion = new Region(bounds);
+
+            if (WindowState == FormWindowState.Maximized)
+            {
+                chromeRegion.Exclude(bounds);
+            }
+            else
+            {
+                chromeRegion.Exclude(clientBounds);
+            }
+
+            var borderColor = WindowActive ? BorderColor : InactiveBorderColor;
+
+            g.FillRegion(new SolidBrush(borderColor), chromeRegion);
         }
 
         /// <summary>

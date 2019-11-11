@@ -49,9 +49,9 @@ namespace DemoApp
 
 		private void button2_Click(object sender, EventArgs e)
 		{
-            this.Location = new Point(400, 400);
+            Process.Start("https://github.com/NetDimension/WinForm-ModernUI");
 
-			//Process.Start("https://github.com/NetDimension/WinForm-ModernUI");
+            //this.Scale(new SizeF(1.25f, 1.25f));
 		}
 
         private void button4_Click(object sender, EventArgs e)
