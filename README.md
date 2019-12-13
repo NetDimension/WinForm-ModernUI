@@ -1,14 +1,14 @@
-# ModernUI Theme for .Net WinForms
+# ModernUI Form
 
-**ModernUI Theme** is a skin library that makes your .Net Windows Form Application look like ModernUI window in Win8/8.1 or Win10.
+**ModernUI Form** is a library that makes your .Net Windows Form Application look like ModernUI window in Win8/8.1 and Win10.
 
-It redrews borders of stardard WinForm, and make a dropshadow around the window. You can set your form's border size and color, also you can set color of the dropshadow too.
+It's frameless, border customizable. You could set border size, border color and dropshadows. It redrews borders of stardard WinForm, and make a dropshadow around the window. You can set your form's border size and color, also you can set color of the dropshadow too.
 
 ![Screen Shot](http://ohtrip.cn/media/20180212015259.jpg)
 
 ## 2019/12/13 ##
 
-.NET 4.6ÒÔ¼°Ö®ºóµÄ°æ±¾Î¢ÈíÎªWinFormÌí¼ÓÁËÔ­ÉúµÄËõ·ÅÖ§³Ö£¬ÔÚapp.configÎÄ¼şÖĞ¼ÓÈëÒ»ÏÂ´úÂë¼´¿É¿ªÆôÔ­ÉúµÄËõ·ÅÖ§³Ö¡£
+.NET 4.6ä»¥åŠä¹‹åçš„ç‰ˆæœ¬å¾®è½¯ä¸ºWinFormæ·»åŠ äº†åŸç”Ÿçš„ç¼©æ”¾æ”¯æŒï¼Œåœ¨app.configæ–‡ä»¶ä¸­åŠ å…¥ä¸€ä¸‹ä»£ç å³å¯å¼€å¯åŸç”Ÿçš„ç¼©æ”¾æ”¯æŒã€‚
 ```
 <configuration>
     ...
@@ -18,13 +18,13 @@ It redrews borders of stardard WinForm, and make a dropshadow around the window.
     </System.Windows.Forms.ApplicationConfigurationSection>
 </configuration>
 ```
-Õë¶Ô´ËÌØĞÔ£¬ĞŞ¸ÄÁË´¦ÀíDPI±ä»¯µÄÏûÏ¢£¬ºöÂÔÔ­ÉúµÄËõ·ÅÏÂ´Î£¬±ÜÃâ´°¿Ú±»Ëõ·Å2´ÎµÄÎÊÌâ¡£
+é’ˆå¯¹æ­¤ç‰¹æ€§ï¼Œä¿®æ”¹äº†å¤„ç†DPIå˜åŒ–çš„æ¶ˆæ¯ï¼Œå¿½ç•¥åŸç”Ÿçš„ç¼©æ”¾ä¸‹æ¬¡ï¼Œé¿å…çª—å£è¢«ç¼©æ”¾2æ¬¡çš„é—®é¢˜ã€‚
 
-## 2019/11/11 ¸üĞÂ ##
+## 2019/11/11 æ›´æ–° ##
 
-¼ÓÈëÁË¶ÔWin8.1/Win10µÄPerMonitor/PerMonitorV2µÄDPIÏà¹ØAPIµÄÖ§³Ö.
+åŠ å…¥äº†å¯¹Win8.1/Win10çš„PerMonitor/PerMonitorV2çš„DPIç›¸å…³APIçš„æ”¯æŒ.
 
-ÏÖÔÚÄÜ¹ıÍ¨¹ıÌí¼ÓdpiAwarenessÊôĞÔÀ´ÉùÃ÷¶Ô²»Í¬DPI½Ó¿ÚµÄÖ§³Ö¡£
+ç°åœ¨èƒ½è¿‡é€šè¿‡æ·»åŠ dpiAwarenesså±æ€§æ¥å£°æ˜å¯¹ä¸åŒDPIæ¥å£çš„æ”¯æŒã€‚
 
 ```
     <application xmlns="urn:schemas-microsoft-com:asm.v3">
@@ -35,22 +35,22 @@ It redrews borders of stardard WinForm, and make a dropshadow around the window.
     </application>
 ```
 
-## 2019/11/2 ¸üĞÂ ##
+## 2019/11/2 æ›´æ–° ##
 
-ÖØĞÂĞ´ÁË´°¿Úµ×²ã½â¾öÁËÒÔÏÂÎÊÌâ£º
+é‡æ–°å†™äº†çª—å£åº•å±‚è§£å†³äº†ä»¥ä¸‹é—®é¢˜ï¼š
 
-- ×î´ó»¯×îĞ¡»¯Ö®ºóÄÚÈİ´íÂÒ
-- Éè¼ÆÆ÷´óĞ¡ÓëÊµ¼Ê´óĞ¡²»Ò»ÖÂ
-- ³õÊ¼µÄ WindowState ÉèÖÃÎª Maximized Ê±´°¿ÚÎ»ÖÃ´íÎó
-- FormBorderStyleÉèÖÃÎªNoneÊÇÈ«ÆÁ´°¿Ú´óĞ¡²»ÕıÈ·
-- Win7+ÏµÍ³ÏÂ£¬ÍÏ×§´°¿Úµ½×ÀÃæ¶¥²¿×î´ó»¯£¬»¹Ô­Ê±´°¿ÚÎ»ÖÃ´íÎó
+- æœ€å¤§åŒ–æœ€å°åŒ–ä¹‹åå†…å®¹é”™ä¹±
+- è®¾è®¡å™¨å¤§å°ä¸å®é™…å¤§å°ä¸ä¸€è‡´
+- åˆå§‹çš„ WindowState è®¾ç½®ä¸º Maximized æ—¶çª—å£ä½ç½®é”™è¯¯
+- FormBorderStyleè®¾ç½®ä¸ºNoneæ˜¯å…¨å±çª—å£å¤§å°ä¸æ­£ç¡®
+- Win7+ç³»ç»Ÿä¸‹ï¼Œæ‹–æ‹½çª—å£åˆ°æ¡Œé¢é¡¶éƒ¨æœ€å¤§åŒ–ï¼Œè¿˜åŸæ—¶çª—å£ä½ç½®é”™è¯¯
 
-ĞŞ¸ÄµÄAPI
+ä¿®æ”¹çš„API
 
-- Ê¹ÓÃBordersÊôĞÔÌæ´úÁËBorderWidthÊôĞÔ£¬ÏÖÔÚ¿ÉÒÔÊ¹ÓÃBordersÊôĞÔ[PaddingÀàĞÍ]À´Îª´°ÌåÖ¸¶¨Ã¿Ìõ±ß¿òµÄ´óĞ¡
-- Ê¹ÓÃBorderColorÊôĞÔÌæ´úÁËActiveBorderColorºÍInactiveBorderColorÊôĞÔ£¬ÏÖÔÚÍ³Ò»Ê¹ÓÃBorderColorÊôĞÔÉèÖÃ±ß¿òÑÕÉ«
-- Ê¹ÓÃShadowColorÊôĞÔÌæ´úÁËActiveShaodowColorºÍInactiveShadowColorÊôĞÔ£¬ÏÖÔÚÍ³Ò»Ê¹ÓÃShadowColorÊôĞÔÉèÖÃ´°ÌåÍ¶Ó°Ğ§¹û
-- ÒÆ³ıÁËBorderEffectÊôĞÔ£¬ÏÖÔÚÖ»±£ÁôDropShadowÒ»ÖÖÍ¶Ó°Ä£Ê½£¬È¡ÏûÁËGlowÍ¶Ó°ÑùÊ½¡£
+- ä½¿ç”¨Borderså±æ€§æ›¿ä»£äº†BorderWidthå±æ€§ï¼Œç°åœ¨å¯ä»¥ä½¿ç”¨Borderså±æ€§[Paddingç±»å‹]æ¥ä¸ºçª—ä½“æŒ‡å®šæ¯æ¡è¾¹æ¡†çš„å¤§å°
+- ä½¿ç”¨BorderColorå±æ€§æ›¿ä»£äº†ActiveBorderColorå’ŒInactiveBorderColorå±æ€§ï¼Œç°åœ¨ç»Ÿä¸€ä½¿ç”¨BorderColorå±æ€§è®¾ç½®è¾¹æ¡†é¢œè‰²
+- ä½¿ç”¨ShadowColorå±æ€§æ›¿ä»£äº†ActiveShaodowColorå’ŒInactiveShadowColorå±æ€§ï¼Œç°åœ¨ç»Ÿä¸€ä½¿ç”¨ShadowColorå±æ€§è®¾ç½®çª—ä½“æŠ•å½±æ•ˆæœ
+- ç§»é™¤äº†BorderEffectå±æ€§ï¼Œç°åœ¨åªä¿ç•™DropShadowä¸€ç§æŠ•å½±æ¨¡å¼ï¼Œå–æ¶ˆäº†GlowæŠ•å½±æ ·å¼ã€‚
 
  
 
