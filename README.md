@@ -6,6 +6,20 @@ It redrews borders of stardard WinForm, and make a dropshadow around the window.
 
 ![Screen Shot](http://ohtrip.cn/media/20180212015259.jpg)
 
+## 2019/12/13 ##
+
+.NET 4.6以及之后的版本微软为WinForm添加了原生的缩放支持，在app.config文件中加入一下代码即可开启原生的缩放支持。
+```
+<configuration>
+    ...
+    <System.Windows.Forms.ApplicationConfigurationSection>
+        <add key="DpiAwareness" value="PerMonitorV2"/>
+        <add key="EnableWindowsFormsHighDpiAutoResizing" value="true"/>
+    </System.Windows.Forms.ApplicationConfigurationSection>
+</configuration>
+```
+针对此特性，修改了处理DPI变化的消息，忽略原生的缩放下次，避免窗口被缩放2次的问题。
+
 ## 2019/11/11 更新 ##
 
 加入了对Win8.1/Win10的PerMonitor/PerMonitorV2的DPI相关API的支持.

@@ -145,10 +145,10 @@ namespace NetDimension.WinForm
             shadows.Add(bottomFormShadow);
             shadows.Add(rightFormShadow);
 
-            Win32.ShowWindow(topFormShadow.Handle, SW_SHOWNOACTIVATE);
-            Win32.ShowWindow(leftFormShadow.Handle, SW_SHOWNOACTIVATE);
-            Win32.ShowWindow(bottomFormShadow.Handle, SW_SHOWNOACTIVATE);
-            Win32.ShowWindow(rightFormShadow.Handle, SW_SHOWNOACTIVATE);
+            User32.ShowWindow(topFormShadow.Handle, ShowWindowStyles.SW_SHOWNOACTIVATE);
+            User32.ShowWindow(leftFormShadow.Handle, ShowWindowStyles.SW_SHOWNOACTIVATE);
+            User32.ShowWindow(bottomFormShadow.Handle, ShowWindowStyles.SW_SHOWNOACTIVATE);
+            User32.ShowWindow(rightFormShadow.Handle, ShowWindowStyles.SW_SHOWNOACTIVATE);
 
             topFormShadow.ExternalResizeEnable = Resizable;
             leftFormShadow.ExternalResizeEnable = Resizable;
@@ -190,7 +190,7 @@ namespace NetDimension.WinForm
                         y = parentWindow.Top,
                         cx = parentWindow.Width,
                         cy = parentWindow.Height,
-                        flags = SWP_SHOWWINDOW
+                        flags = (uint)SetWindowPosFlags.SWP_SHOWWINDOW
                     });
 
                 }
@@ -277,22 +277,22 @@ namespace NetDimension.WinForm
                 base.WndProc(ref m);
                 return;
             }
-            var msg = m.Msg;
+            var msg = (WindowsMessages)m.Msg;
 
 
             switch (msg)
             {
 
-                case WM_WINDOWPOSCHANGED:
+                case WindowsMessages.WM_WINDOWPOSCHANGED:
                     lastLocation = (WINDOWPOS)Marshal.PtrToStructure(m.LParam, typeof(WINDOWPOS));
                     WindowPosChanged(lastLocation);
                     base.WndProc(ref m);
                     break;
-                case WM_ACTIVATEAPP:
+                case WindowsMessages.WM_ACTIVATEAPP:
                     {
                         var className = new StringBuilder(256);
 
-                        if (m.LParam != IntPtr.Zero && GetClassName(m.LParam, className, className.Capacity) != 0)
+                        if (m.LParam != IntPtr.Zero && User32.GetClassName(m.LParam, className, className.Capacity) != 0)
                         {
                             var hWndShadow = m.LParam;
                             var name = className.ToString();
@@ -317,7 +317,7 @@ namespace NetDimension.WinForm
                     }
                     break;
 
-                case WM_SIZE:
+                case WindowsMessages.WM_SIZE:
 
                     base.WndProc(ref m);
 
@@ -379,7 +379,7 @@ namespace NetDimension.WinForm
 
             if (Resizable)
             {
-                SendMessage(parentWindowHWnd, WM_SYSCOMMAND, (IntPtr)(GetSizeMode(e.Mode)), IntPtr.Zero);
+                User32.SendMessage(parentWindowHWnd, (uint)WindowsMessages.WM_SYSCOMMAND, (IntPtr)(GetSizeMode(e.Mode)), IntPtr.Zero);
             }
             
         }
@@ -498,11 +498,11 @@ namespace NetDimension.WinForm
                 sideShadow.SetLocation(location);
             }
 
-            if ((location.flags & SWP_HIDEWINDOW) != 0)
+            if ((location.flags & (uint)SetWindowPosFlags.SWP_HIDEWINDOW) != 0)
             {
                 ShowBorder(false);
             }
-            else if ((location.flags & SWP_SHOWWINDOW) != 0)
+            else if ((location.flags & (uint)SetWindowPosFlags.SWP_SHOWWINDOW) != 0)
             {
                 ShowBorder(true);
             }
@@ -533,8 +533,8 @@ namespace NetDimension.WinForm
 
         private void Size(IntPtr wParam, IntPtr lParam)
         {
-            int width = LOWORD(lParam);
-            int height = HIWORD(lParam);
+            int width = (int)User32.LOWORD(lParam);
+            int height = (int)User32.HIWORD(lParam);
 
             if (!isEnabled) return;
 
@@ -555,7 +555,7 @@ namespace NetDimension.WinForm
             {
                 var rect = new RECT();
 
-                GetWindowRect(parentWindow.TopLevelControl != null ? parentWindow.TopLevelControl.Handle : parentWindow.Handle, ref rect);
+                User32.GetWindowRect(parentWindow.TopLevelControl != null ? parentWindow.TopLevelControl.Handle : parentWindow.Handle, ref rect);
 
                 UpdateSizes(rect.right - rect.left, rect.bottom - rect.top);
                 ShowBorder(true);

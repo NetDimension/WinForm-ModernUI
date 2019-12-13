@@ -10,17 +10,6 @@ using static NetDimension.WinForm.Win32;
 namespace NetDimension.WinForm
 {
 
-    internal enum ResizeDirection
-    {
-        Left = 61441,
-        Right = 61442,
-        Top = 61443,
-        TopLeft = 61444,
-        TopRight = 61445,
-        Bottom = 61446,
-        BottomLeft = 61447,
-        BottomRight = 61448,
-    }
 
     internal class ChromeShadowElement : IDisposable
     {
@@ -43,7 +32,7 @@ namespace NetDimension.WinForm
 
         private const int Size = 20;
         private readonly ShadowDockPositon _side;
-        private const int NoSizeNoMove = SWP_NOSIZE | SWP_NOMOVE;
+        private const SetWindowPosFlags NoSizeNoMove = (SetWindowPosFlags.SWP_NOSIZE | SetWindowPosFlags.SWP_NOMOVE);
 
         private bool _parentWindowIsFocused;
 
@@ -82,7 +71,7 @@ namespace NetDimension.WinForm
 
         internal void SetOwner(IntPtr owner)
         {
-            SetWindowLong(_handle, (int)GetWindowLongFlags.GWL_HWNDPARENT, (int)owner);
+            User32.SetWindowLong(_handle, GetWindowLongFlags.GWL_HWNDPARENT, owner);
         }
 
         #endregion
@@ -106,8 +95,8 @@ namespace NetDimension.WinForm
                 width = Size;
             }
 
-            const int flags = (SWP_NOMOVE | SWP_NOACTIVATE);
-            SetWindowPos(_handle, new IntPtr(-2), 0, 0, width, height, flags);
+            const SetWindowPosFlags flags = (SetWindowPosFlags.SWP_NOMOVE | SetWindowPosFlags.SWP_NOACTIVATE);
+            User32.SetWindowPos(_handle, new IntPtr(-2), 0, 0, width, height, flags);
             Render();
         }
 
@@ -135,21 +124,21 @@ namespace NetDimension.WinForm
                     break;
             }
 
-            UpdateZOrder(left, top, SWP_NOSIZE | SWP_NOACTIVATE);
+            UpdateZOrder(left, top, (int)(SetWindowPosFlags.SWP_NOSIZE | SetWindowPosFlags.SWP_NOACTIVATE));
         }
 
         internal void UpdateZOrder(int left, int top, int flags)
         {
-            SetWindowPos(_handle, !IsTopMost ? _noTopMost : _yesTopMost, left, top, 0, Size, (uint)flags);
+            User32.SetWindowPos(_handle, !IsTopMost ? _noTopMost : _yesTopMost, left, top, 0, Size, (SetWindowPosFlags)flags);
 
-            SetWindowPos(_handle, _parentHandle, 0, 0, 0, Size, NoSizeNoMove | SWP_NOACTIVATE);
+            User32.SetWindowPos(_handle, _parentHandle, 0, 0, 0, Size, NoSizeNoMove | SetWindowPosFlags.SWP_NOACTIVATE);
 
         }
 
         internal void UpdateZOrder()
         {
-            SetWindowPos(_handle, !IsTopMost ? _noTopMost : _yesTopMost, 0, 0, 0, Size, NoSizeNoMove | SWP_NOACTIVATE);
-            SetWindowPos(_handle, _parentHandle, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+            User32.SetWindowPos(_handle, !IsTopMost ? _noTopMost : _yesTopMost, 0, 0, 0, Size, NoSizeNoMove | SetWindowPosFlags.SWP_NOACTIVATE);
+            User32.SetWindowPos(_handle, _parentHandle, 0, 0, 0, 0, SetWindowPosFlags.SWP_NOMOVE | SetWindowPosFlags.SWP_NOSIZE);
         }
 
 
@@ -186,19 +175,19 @@ namespace NetDimension.WinForm
         internal void Show(bool show)
         {
             const int swShowNoActivate = 4;
-            ShowWindow(_handle, (short)(show ? swShowNoActivate : 0));
+            User32.ShowWindow(_handle, (short)(show ? swShowNoActivate : 0));
         }
 
         internal void Close()
         {
             if (Region != IntPtr.Zero)
             {
-                SetWindowRgn(Handle, IntPtr.Zero, false);
-                DeleteObject(Region);
+                Gdi32.SetWindowRgn(Handle, IntPtr.Zero, false);
+                Gdi32.DeleteObject(Region);
             }
-            CloseWindow(_handle);
-            SetParent((int)_handle, 0);
-            DestroyWindow(_handle);
+            User32.CloseWindow(_handle);
+            User32.SetParent((int)_handle, 0);
+            User32.DestroyWindow(_handle);
         }
 
         #endregion
@@ -220,7 +209,7 @@ namespace NetDimension.WinForm
                 lpfnWndProc = Marshal.GetFunctionPointerForDelegate(_wndProcDelegate)
             };
 
-            ushort classAtom = RegisterClassW(ref windClass);
+            ushort classAtom = User32.RegisterClassW(ref windClass);
 
             int lastError = Marshal.GetLastWin32Error();
 
@@ -240,10 +229,10 @@ namespace NetDimension.WinForm
                 WindowStyles.WS_CLIPCHILDREN |
                 WindowStyles.WS_POPUP);
 
-            var owner = GetWindow(_parentHandle, 4);
+            var owner = User32.GetWindow(_parentHandle, 4);
 
             // Create window
-            _handle = CreateWindowExW(
+            _handle = User32.CreateWindowExW(
                 extendedStyle,
                 className,
                 className,
@@ -263,36 +252,37 @@ namespace NetDimension.WinForm
                 return;
             }
 
-            uint styles = GetWindowLong(_handle, (int)GetWindowLongFlags.GWL_EXSTYLE);
-            styles = styles | WS_EX_LAYERED /*| WS_EX_NOACTIVATE | WS_EX_TRANSPARENT*/;
-            SetWindowLong(_handle, (int)GetWindowLongFlags.GWL_EXSTYLE, (int)styles);
+            uint styles = User32.GetWindowLong(_handle, GetWindowLongFlags.GWL_EXSTYLE);
+            styles = styles | (uint)WindowExStyles.WS_EX_LAYERED /*| WS_EX_NOACTIVATE | WS_EX_TRANSPARENT*/;
+            User32.SetWindowLong(_handle, GetWindowLongFlags.GWL_EXSTYLE, styles);
         }
 
-        private IntPtr CustomWndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+        private IntPtr CustomWndProc(IntPtr hWnd, uint message, IntPtr wParam, IntPtr lParam)
         {
 
+            var msg = (WindowsMessages)message;
 
 
-            if (msg == WM_LBUTTONDOWN)
+            if (msg == WindowsMessages.WM_LBUTTONDOWN)
             {
                 var point = GetPostionFromPtr(lParam);
-                ClientToScreen(hWnd, ref point);
+                User32.ClientToScreen(hWnd, ref point);
                 CastMouseDown(new Point(point.x,point.y));
             }
 
-            if (msg == WM_SETFOCUS)
+            if (msg == WindowsMessages.WM_SETFOCUS)
             {
-                PostMessage(_parentHandle, msg, hWnd, IntPtr.Zero);
+                User32.PostMessage(_parentHandle, message, hWnd, IntPtr.Zero);
             }
 
 
-            if (msg == WM_SETCURSOR)
+            if (msg == WindowsMessages.WM_SETCURSOR)
             {
                 SetCursor();
                 return new IntPtr(1);
             }
 
-            return DefWindowProcW(hWnd, msg, wParam, lParam);
+            return User32.DefWindowProcW(hWnd, message, wParam, lParam);
         }
 
 
@@ -315,7 +305,7 @@ namespace NetDimension.WinForm
             }
 
             RECT windowRect = new RECT();
-            GetWindowRect(_parentHandle, ref windowRect);
+            User32.GetWindowRect(_parentHandle, ref windowRect);
             Bitmap cachedBmp = _parentWindowIsFocused ? _decorator.ActiveBitmapTemplate : _decorator.InactiveBitmapTemplate;
 
             lock (cachedBmp)
@@ -448,7 +438,7 @@ namespace NetDimension.WinForm
         private void DrawToLayeredWindow()
         {
             RECT rect = new RECT();
-            GetWindowRect(_handle, ref rect);
+            User32.GetWindowRect(_handle, ref rect);
 
             int width = rect.right - rect.left;
             int height = rect.bottom - rect.top;
@@ -457,26 +447,26 @@ namespace NetDimension.WinForm
 
             POINT newLocation = new POINT(rect.left, rect.top);
             SIZE newSize = new SIZE(width, height);
-            IntPtr screenDc = GetDC(IntPtr.Zero);
-            IntPtr memDc = CreateCompatibleDC(screenDc);
+            IntPtr screenDc = User32.GetDC(IntPtr.Zero);
+            IntPtr memDc = Gdi32.CreateCompatibleDC(screenDc);
             using (Bitmap bmp = GetBitmap(width, height))
             {
                 IntPtr hBitmap = bmp.GetHbitmap(_transparent);
-                IntPtr hOldBitmap = SelectObject(memDc, hBitmap);
+                IntPtr hOldBitmap = Gdi32.SelectObject(memDc, hBitmap);
 
 
 
-                UpdateLayeredWindow(_handle, screenDc, ref newLocation, ref newSize, memDc, ref _ptZero, 0, ref _blend, 0x02);
+                User32.UpdateLayeredWindow(_handle, screenDc, ref newLocation, ref newSize, memDc, ref _ptZero, 0, ref _blend, 0x02);
 
-                ReleaseDC(IntPtr.Zero, screenDc);
+                User32.ReleaseDC(IntPtr.Zero, screenDc);
                 if (hBitmap != IntPtr.Zero)
                 {
-                    SelectObject(memDc, hOldBitmap);
-                    DeleteObject(hBitmap);
+                    Gdi32.SelectObject(memDc, hOldBitmap);
+                    Gdi32.DeleteObject(hBitmap);
                 }
             }
 
-            DeleteDC(memDc);
+            Gdi32.DeleteDC(memDc);
             GC.Collect();
         }
 
@@ -490,15 +480,15 @@ namespace NetDimension.WinForm
                 hRegion = GetRegion();
                 if (hRegion != IntPtr.Zero)
                 {
-                    SetWindowRgn(Handle, hRegion, false);
+                    Gdi32.SetWindowRgn(Handle, hRegion, false);
                 }
                 if (Region != IntPtr.Zero)
-                    DeleteObject(Region);
+                    Gdi32.DeleteObject(Region);
                 Region = hRegion;
             }
             finally
             {
-                if (hRegion != IntPtr.Zero) DeleteObject(hRegion);
+                if (hRegion != IntPtr.Zero) Gdi32.DeleteObject(hRegion);
             }
         }
 
@@ -510,20 +500,20 @@ namespace NetDimension.WinForm
             try
             {
                 var rect = new RECT();
-                GetWindowRect(_handle, ref rect);
+                User32.GetWindowRect(_handle, ref rect);
                 int width = rect.right - rect.left;
                 int height = rect.bottom - rect.top;
 
-                hShadowReg = CreateRectRgn(0, 0, width, height);
-                hOwnerReg = CreateRectRgn(GetRegionRect());
+                hShadowReg = Gdi32.CreateRectRgn(0, 0, width, height);
+                hOwnerReg = Gdi32.CreateRectRgn(GetRegionRect());
                 hRegion = CombineRgn(hShadowReg, hOwnerReg, 4);
             }
             finally
             {
                 if (hShadowReg != IntPtr.Zero)
-                    DeleteObject(hShadowReg);
+                    Gdi32.DeleteObject(hShadowReg);
                 if (hOwnerReg != IntPtr.Zero)
-                    DeleteObject(hOwnerReg);
+                    Gdi32.DeleteObject(hOwnerReg);
             }
             return hRegion;
         }
@@ -533,7 +523,7 @@ namespace NetDimension.WinForm
             get
             {
                 var rect = new RECT();
-                GetWindowRect(_handle, ref rect);
+                User32.GetWindowRect(_handle, ref rect);
                 int width = rect.right - rect.left;
                 int height = rect.bottom - rect.top;
                 return width != 0 && height != 0;
@@ -543,7 +533,7 @@ namespace NetDimension.WinForm
         protected Rectangle GetRegionRect()
         {
             var rect = new RECT();
-            GetWindowRect(_handle, ref rect);
+            User32.GetWindowRect(_handle, ref rect);
 
             int offset = 20;
             int width = rect.right - rect.left;
@@ -555,8 +545,8 @@ namespace NetDimension.WinForm
 
         protected IntPtr CombineRgn(IntPtr hrgnSrc1, IntPtr hrgnSrc2, int fnCombineMode)
         {
-            IntPtr hRegion = CreateRectRgn(Rectangle.Empty);
-            Win32.CombineRgn(hRegion, hrgnSrc1, hrgnSrc2, fnCombineMode);
+            IntPtr hRegion = Gdi32.CreateRectRgn(Rectangle.Empty);
+            Gdi32.CombineRgn(hRegion, hrgnSrc1, hrgnSrc2, fnCombineMode);
             return hRegion;
         }
 
@@ -569,31 +559,31 @@ namespace NetDimension.WinForm
                 return;
             }
 
-            IntPtr handle = LoadCursor(IntPtr.Zero, (int)IDC_STANDARD_CURSORS.IDC_HAND);
+            IntPtr handle = User32.LoadCursor(IntPtr.Zero, (int)IDC_STANDARD_CURSORS.IDC_HAND);
             HitTest mode = GetResizeMode();
             switch (mode)
             {
                 case HitTest.HTTOP:
                 case HitTest.HTBOTTOM:
-                    handle = LoadCursor(IntPtr.Zero, (int)IDC_STANDARD_CURSORS.IDC_SIZENS);
+                    handle = User32.LoadCursor(IntPtr.Zero, (int)IDC_STANDARD_CURSORS.IDC_SIZENS);
                     break;
                 case HitTest.HTLEFT:
                 case HitTest.HTRIGHT:
-                    handle = LoadCursor(IntPtr.Zero, (int)IDC_STANDARD_CURSORS.IDC_SIZEWE);
+                    handle = User32.LoadCursor(IntPtr.Zero, (int)IDC_STANDARD_CURSORS.IDC_SIZEWE);
                     break;
                 case HitTest.HTTOPLEFT:
                 case HitTest.HTBOTTOMRIGHT:
-                    handle = LoadCursor(IntPtr.Zero, (int)IDC_STANDARD_CURSORS.IDC_SIZENWSE);
+                    handle = User32.LoadCursor(IntPtr.Zero, (int)IDC_STANDARD_CURSORS.IDC_SIZENWSE);
                     break;
                 case HitTest.HTTOPRIGHT:
                 case HitTest.HTBOTTOMLEFT:
-                    handle = LoadCursor(IntPtr.Zero, (int)IDC_STANDARD_CURSORS.IDC_SIZENESW);
+                    handle = User32.LoadCursor(IntPtr.Zero, (int)IDC_STANDARD_CURSORS.IDC_SIZENESW);
                     break;
             }
 
             if (handle != IntPtr.Zero)
             {
-                Win32.SetCursor(handle);
+                User32.SetCursor(handle);
             }
         }
 
@@ -619,8 +609,8 @@ namespace NetDimension.WinForm
         private POINT GetRelativeMousePosition()
         {
             POINT point = new POINT();
-            GetCursorPos(ref point);
-            ScreenToClient(_handle, ref point);
+            User32.GetCursorPos(ref point);
+            User32.ScreenToClient(_handle, ref point);
             return point;
         }
 
@@ -630,7 +620,7 @@ namespace NetDimension.WinForm
 
             RECT rect = new RECT();
             POINT point = GetRelativeMousePosition();
-            GetWindowRect(_handle, ref rect);
+            User32.GetWindowRect(_handle, ref rect);
             switch (_side)
             {
                 case ShadowDockPositon.Top:
@@ -678,7 +668,7 @@ namespace NetDimension.WinForm
             _disposed = true;
             if (_handle == IntPtr.Zero) return;
 
-            DestroyWindow(_handle);
+            User32.DestroyWindow(_handle);
             _handle = IntPtr.Zero;
             gcHandle.Free();
         }

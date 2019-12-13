@@ -58,6 +58,8 @@
     <Compile Include="Utils\FormStyleHelper.cs" />
     <Compile Include="Utils\LockBitmap.cs" />
     <Compile Include="Utils\Win32APIs.cs" />
+    <Compile Include="Utils\Win32Types.cs" />
+    <Compile Include="Utils\WindowMessages.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>

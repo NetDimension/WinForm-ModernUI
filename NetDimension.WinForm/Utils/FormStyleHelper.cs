@@ -27,7 +27,7 @@ namespace NetDimension.WinForm
         /// <returns>Border sizing.</returns>
         public static Padding GetWindowBorders(CreateParams cp)
         {
-            Win32.RECT rect = new Win32.RECT();
+            RECT rect = new RECT();
 
             // Start with a zero sized rectangle
             rect.left = 0;
@@ -37,7 +37,7 @@ namespace NetDimension.WinForm
 
 
             // Adjust rectangle to add on the borders required
-            Win32.AdjustWindowRectEx(ref rect, cp.Style, false, cp.ExStyle);
+            User32.AdjustWindowRectEx(ref rect, cp.Style, false, cp.ExStyle);
 
             // Return the per side border values
             return new Padding(-rect.left, -rect.top, rect.right, rect.bottom);
@@ -78,9 +78,9 @@ namespace NetDimension.WinForm
         {
             // Get the current window style (cannot use the 
             // WindowState property as it can be slightly out of date)
-            uint style = Win32.GetWindowLong(f.Handle, Win32.GWL_STYLE);
+            uint style = User32.GetWindowLong(f.Handle, GetWindowLongFlags.GWL_STYLE);
 
-            return ((style &= Win32.WS_MAXIMIZE) != 0);
+            return ((style &= (uint)WindowStyles.WS_MAXIMIZE) != 0);
         }
 
 
@@ -93,9 +93,9 @@ namespace NetDimension.WinForm
         {
             // Get the current window style (cannot use the 
             // WindowState property as it can be slightly out of date)
-            uint style = Win32.GetWindowLong(f.Handle, Win32.GWL_STYLE);
+            uint style = User32.GetWindowLong(f.Handle, GetWindowLongFlags.GWL_STYLE);
 
-            return ((style &= Win32.WS_MINIMIZE) != 0);
+            return ((style &= (uint)WindowStyles.WS_MINIMIZE) != 0);
         }
 
         /// <summary>
@@ -106,8 +106,8 @@ namespace NetDimension.WinForm
         {
             // Grab the actual current size of the window, this is more accurate than using
             // the 'this.Size' which is out of date when performing a resize of the window.
-            Win32.RECT windowRect = new Win32.RECT();
-            Win32.GetWindowRect(handle, ref windowRect);
+            RECT windowRect = new RECT();
+            User32.GetWindowRect(handle, ref windowRect);
 
             // Create rectangle that encloses the entire window
             return new Rectangle(0, 0,

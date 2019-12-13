@@ -353,7 +353,6 @@ namespace NetDimension.WinForm
         private void HandleDpiChanged()
         {
 
-            //if (IsDesignMode) return;
 
 
             float scaleFactor = 1f;
@@ -407,8 +406,117 @@ namespace NetDimension.WinForm
 
 
 
+        protected virtual bool OnWMDpiChanged(ref Message m)
+        {
+            if (scaling)
+            {
+                oldDpi = currentDpi;
+                return false;
+            }
+            else
+            {
+                oldDpi = currentDpi;
+                currentDpi = (short)(int)m.WParam;
+            }
+
+
+
+
+            WriteConsoleLog($"[WM_DPICHANGED]: {oldDpi} -> {currentDpi}");
+
+
+
+            if (!loaded)
+            {
+                return false;
+            }
+
+            if (oldDpi != currentDpi)
+            {
+
+
+                if (this.isMoving)
+                {
+                    shouldScale = true;
+                }
+                else
+                {
+
+                    HandleDpiChanged();
+                    shouldScale = false;
+                }
+
+                return true;
+            }
+
+            return false;
+
+        }
+
+        protected override void OnResizeBegin(EventArgs e)
+        {
+            this.isMoving = true;
+
+            base.OnResizeBegin(e);
+
+        }
+
+
+
+        protected override void OnResizeEnd(EventArgs e)
+        {
+            base.OnResizeEnd(e);
+
+            this.isMoving = false;
+
+            if (shouldScale)
+            {
+                WriteConsoleLog($"[RESIZE END] {shouldScale} {DpiScaleFactor}");
+
+
+                shouldScale = false;
+
+
+                HandleDpiChanged();
+            }
+        }
+
+        protected override void OnMove(EventArgs e)
+        {
+            base.OnMove(e);
+
+            if (this.shouldScale/* && CanPerformScaling()*/)
+            {
+                WriteConsoleLog($"[MOVE CHANGE] {shouldScale} {DpiScaleFactor}");
+
+
+                this.shouldScale = false;
+
+                HandleDpiChanged();
+            }
+        }
+
+        private bool CanPerformScaling()
+        {
+            //Screen screen = Screen.FromHandle(Handle);
+
+            Screen screen = Screen.FromPoint(Location);
+
+            if (screen.Bounds.Contains(this.Bounds))
+            {
+                //WriteConsoleLog($"Form in [{screen}] is {screen.Bounds.Contains(this.Bounds)}");
+
+                return true;
+            }
+
+            return false;
+        }
+
+
         protected override void ScaleControl(SizeF factor, BoundsSpecified specified)
         {
+
+
 
             Rectangle rect = this.Bounds;
 
@@ -428,10 +536,8 @@ namespace NetDimension.WinForm
 
             this.scaling = true;
 
-            if (!IsDesignMode)
-            {
-                ScaleFontForControl(this, factor.Width);
-            }
+            ScaleFontForControl(this, factor.Width);
+
 
             base.ScaleControl(factor, specified);
 
@@ -546,6 +652,7 @@ namespace NetDimension.WinForm
 
         protected override Rectangle GetScaledBounds(Rectangle bounds, SizeF factor, BoundsSpecified specified)
         {
+
             Rectangle rect = base.GetScaledBounds(bounds, factor, specified);
 
             Size sz = SizeFromClientSize(Size.Empty);
@@ -561,9 +668,6 @@ namespace NetDimension.WinForm
             }
 
             //this.Cursor = new Cursor(Cursor.Current.Handle);
-
-
-
 
             return rect;
         }
@@ -586,7 +690,7 @@ namespace NetDimension.WinForm
 
         protected virtual Padding GetWindowRealNCMargin()
         {
-            Win32.RECT boundsRect = new Win32.RECT();
+            RECT boundsRect = new RECT();
 
             Rectangle screenClient;
 
@@ -609,7 +713,7 @@ namespace NetDimension.WinForm
             boundsRect.bottom = screenClient.Bottom;
 
 
-            Win32.AdjustWindowRectEx(ref boundsRect, cp.Style, this.MainMenuStrip != null, cp.ExStyle);
+            User32.AdjustWindowRectEx(ref boundsRect, cp.Style, this.MainMenuStrip != null, cp.ExStyle);
 
 
 
@@ -630,7 +734,7 @@ namespace NetDimension.WinForm
             {
                 if (processDpiAwareness == PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE && isPerMonitorAwareV2)
                 {
-                    result = ScalePadding(result, currentDpi);
+                    result = ScalePadding(result);
                 }
                 //System.Diagnostics.Debugger.WriteLine($"DPI={currentDpi} {result}");
 
@@ -656,7 +760,7 @@ namespace NetDimension.WinForm
 
         };
 
-        Padding ScalePadding(Padding value, float dpi)
+        Padding ScalePadding(Padding value)
         {
 
 
@@ -666,7 +770,24 @@ namespace NetDimension.WinForm
 
             //var sizingBorderSize = SystemInformation.SizingBorderWidth;
 
-            var scaleFactor = dpi / designTimeDpi;
+            var dpi = currentDpi;
+
+            var hMonitor = User32.MonitorFromWindow(Handle, (uint)MonitorFromWindowFlags.MONITOR_DEFAULTTONEAREST);
+
+            try
+            {
+                //GetDpiForMonitor(hMonitor, MonitorDpiType.MDT_DEFAULT, out int x, out int y);
+                User32.GetDpiForMonitor(hMonitor, MonitorDpiType.MDT_DEFAULT, out int x, out int y);
+                dpi = x;
+
+                WriteConsoleLog($"SCREEN DPI: {dpi}");
+            }
+            catch
+            {
+                
+            }
+
+            var scaleFactor = dpi / (float)designTimeDpi;
             var paddings = StandardPaddings[FormBorderStyle]; //something incorect.
 
 
@@ -679,7 +800,7 @@ namespace NetDimension.WinForm
                 case FormBorderStyle.Fixed3D:
                 case FormBorderStyle.FixedDialog:
                 case FormBorderStyle.FixedToolWindow:
-                    result = new Padding(paddings.Left, (int)Math.Round((paddings.Top - paddings.Bottom) * scaleFactor, MidpointRounding.AwayFromZero) + paddings.Bottom, paddings.Right, paddings.Bottom);
+                    result = new Padding(paddings.Left, (int)Math.Round((paddings.Top - paddings.Bottom) * scaleFactor, MidpointRounding.ToEven) + paddings.Bottom, paddings.Right, paddings.Bottom);
                     break;
                 case FormBorderStyle.Sizable:
                 case FormBorderStyle.SizableToolWindow:
@@ -952,7 +1073,7 @@ namespace NetDimension.WinForm
 
             if (IsHandleCreated)
             {
-                Win32.SetWindowTheme(this.Handle, "", "");
+                UxTheme.SetWindowTheme(this.Handle, "", "");
                 Refresh();
             }
             return needReset;
@@ -1015,7 +1136,8 @@ namespace NetDimension.WinForm
 
         protected virtual void RecalcClientSize()
         {
-            Win32.GetClientRect(Handle, out var clientRect);
+            RECT clientRect = new RECT();
+            User32.GetClientRect(Handle, ref clientRect);
             Rectangle clientBounds = new Rectangle(clientRect.left, clientRect.top, clientRect.right, clientRect.bottom);
             clientBounds.Offset(-clientBounds.Left, -clientBounds.Top);
             clientBounds.Offset(ClientMargin.Left, ClientMargin.Top);
@@ -1069,10 +1191,10 @@ namespace NetDimension.WinForm
         {
             if (!IsDisposed && !Disposing && IsHandleCreated)
             {
-                Win32.SetWindowPos(Handle, IntPtr.Zero, 0, 0, 0, 0,
-                                (uint)(Win32.SWP_NOACTIVATE | Win32.SWP_NOMOVE |
-                                       Win32.SWP_NOZORDER | Win32.SWP_NOSIZE |
-                                       Win32.SWP_NOOWNERZORDER | Win32.SWP_FRAMECHANGED));
+                User32.SetWindowPos(Handle, IntPtr.Zero, 0, 0, 0, 0,
+                                (SetWindowPosFlags.SWP_NOACTIVATE | SetWindowPosFlags.SWP_NOMOVE |
+                                       SetWindowPosFlags.SWP_NOZORDER | SetWindowPosFlags.SWP_NOSIZE |
+                                       SetWindowPosFlags.SWP_NOOWNERZORDER | SetWindowPosFlags.SWP_FRAMECHANGED));
             }
         }
 
@@ -1128,8 +1250,8 @@ namespace NetDimension.WinForm
             {
                 // Grab the actual current size of the window, this is more accurate than using
                 // the 'this.Size' which is out of date when performing a resize of the window.
-                Win32.RECT windowRect = new Win32.RECT();
-                Win32.GetWindowRect(Handle, ref windowRect);
+                RECT windowRect = new RECT();
+                User32.GetWindowRect(Handle, ref windowRect);
 
                 // Create rectangle that encloses the entire window
                 return new Rectangle(0, 0, windowRect.right - windowRect.left, windowRect.bottom - windowRect.top);
@@ -1159,7 +1281,8 @@ namespace NetDimension.WinForm
                 {
                     if (excludeClientArea)
                     {
-                        Win32.GetClientRect(Handle, out var clientRect);
+                        RECT clientRect = new RECT();
+                        User32.GetClientRect(Handle, ref clientRect);
                         Rectangle clientBounds = new Rectangle(clientRect.left, clientRect.top, clientRect.right, clientRect.bottom);
                         clientBounds.Offset(-clientBounds.Left, -clientBounds.Top);
                         clientBounds.Offset(ClientMargin.Left, ClientMargin.Top);
@@ -1172,10 +1295,10 @@ namespace NetDimension.WinForm
                     {
                         IntPtr hRgn = invalidRegion.GetHrgn(g);
 
-                        Win32.RedrawWindow(Handle, IntPtr.Zero, hRgn,
-                                        (uint)(Win32.RDW_FRAME | Win32.RDW_UPDATENOW | Win32.RDW_INVALIDATE));
+                        User32.RedrawWindow(Handle, IntPtr.Zero, hRgn,
+                                        (uint)(RedrawWindowFlags.RDW_FRAME | RedrawWindowFlags.RDW_UPDATENOW | RedrawWindowFlags.RDW_INVALIDATE));
 
-                        Win32.DeleteObject(hRgn);
+                        Gdi32.DeleteObject(hRgn);
                     }
                 }
             }
@@ -1194,8 +1317,8 @@ namespace NetDimension.WinForm
             {
                 // Prevent the OS from drawing the non-client area in classic look
                 // if the application stops responding to windows messages
-                Win32.DisableProcessWindowsGhosting();
-                Win32.SetWindowTheme(Handle, "", "");
+                User32.DisableProcessWindowsGhosting();
+                UxTheme.SetWindowTheme(Handle, "", "");
             }
             catch { }
 
@@ -1213,7 +1336,7 @@ namespace NetDimension.WinForm
             base.OnCreateControl();
 
 
-            if (startupDpi != designTimeDpi)
+            if (startupDpi != designTimeDpi && !IsDesignMode)
             {
                 var factor = startupDpi / (float)designTimeDpi;
 
@@ -1272,8 +1395,8 @@ namespace NetDimension.WinForm
 
 
 
-            OnMinimumClientSizeChanged();
-            OnMaximumClientSizeChanged();
+            //OnMinimumClientSizeChanged();
+            //OnMaximumClientSizeChanged();
 
             CalcFormBounds();
 
@@ -1344,8 +1467,8 @@ namespace NetDimension.WinForm
         protected internal void CalcFormBounds()
         {
             if (IsMdiChild || !IsHandleCreated) return;
-            var correctFormBounds = new Win32.RECT();
-            Win32.GetWindowRect(this.Handle, ref correctFormBounds);
+            var correctFormBounds = new RECT();
+            User32.GetWindowRect(this.Handle, ref correctFormBounds);
             Rectangle currentBounds = new Rectangle(correctFormBounds.left, correctFormBounds.top, correctFormBounds.right - correctFormBounds.left, correctFormBounds.bottom - correctFormBounds.top);
 
             if (IsMinimizedState(currentBounds)) currentBounds = Rectangle.Empty;
@@ -1713,7 +1836,7 @@ namespace NetDimension.WinForm
 
             if (WindowState != FormWindowState.Maximized)
                 return res;
-            var rect = new Win32.RECT();
+            var rect = new RECT();
 
             var ncMargin = GetWindowRealNCMargin();
 
@@ -1725,63 +1848,7 @@ namespace NetDimension.WinForm
             return new Size(rect.right, rect.bottom);
         }
 
-        protected override void OnResizeBegin(EventArgs e)
-        {
-            this.isMoving = true;
-
-            base.OnResizeBegin(e);
-
-        }
-
-        protected override void OnResizeEnd(EventArgs e)
-        {
-            base.OnResizeEnd(e);
-
-            this.isMoving = false;
-
-            if (shouldScale)
-            {
-                WriteConsoleLog($"[RESIZE END] {shouldScale} {DpiScaleFactor}");
-
-
-                shouldScale = false;
-
-
-                HandleDpiChanged();
-            }
-        }
-
-        protected override void OnMove(EventArgs e)
-        {
-            base.OnMove(e);
-
-            if (this.shouldScale && CanPerformScaling())
-            {
-                WriteConsoleLog($"[MOVE CHANGE] {shouldScale} {DpiScaleFactor}");
-
-
-                this.shouldScale = false;
-
-
-                HandleDpiChanged();
-            }
-        }
-
-        private bool CanPerformScaling()
-        {
-            //Screen screen = Screen.FromHandle(Handle);
-
-            Screen screen = Screen.FromPoint(Location);
-
-            if (screen.Bounds.Contains(this.Bounds))
-            {
-                //WriteConsoleLog($"Form in [{screen}] is {screen.Bounds.Contains(this.Bounds)}");
-
-                return true;
-            }
-
-            return false;
-        }
+ 
         #endregion
 
         /// <summary>
@@ -1802,7 +1869,7 @@ namespace NetDimension.WinForm
 
             // We do not process the message if on an MDI child, because doing so prevents the 
             // LayoutMdi call on the parent from working and cascading/tiling the children
-            if ((m.Msg == Win32.WM_NCCALCSIZE) &&
+            if ((m.Msg == (uint)WindowsMessages.WM_NCCALCSIZE) &&
                 ((MdiParent == null)))
             {
                 NCCalcSize(ref m);
@@ -1811,98 +1878,68 @@ namespace NetDimension.WinForm
             // Do we need to override message processing?
             if (!IsDisposed && !Disposing)
             {
-                switch (m.Msg)
+                switch ((WindowsMessages)m.Msg)
                 {
-                    case Win32.WM_DPICHANGED:
-
-
-
-                        //if (this.scaling/* || (!loaded && Owner != null)*/)
-                        //{
-                        //    return;
-                        //}
-
-                        oldDpi = currentDpi;
-
-                        currentDpi = (short)(int)m.WParam;
-
-                        WriteConsoleLog($"[WM_DPICHANGED]: {oldDpi} -> {currentDpi}");
-
-
-                        if (!loaded)
-                        {
-                            return;
-                        }
-
-                        if (oldDpi != currentDpi)
-                        {
-                            if (this.isMoving)
-                            {
-                                shouldScale = true;
-                            }
-                            else
-                            {
-                                HandleDpiChanged();
-                            }
-                        }
+                    case WindowsMessages.WM_DPICHANGED:
+                        processed = OnWMDpiChanged(ref m);
                         break;
 
-                    case Win32.WM_NCPAINT:
+                    case WindowsMessages.WM_NCPAINT:
                         OnWMNCPaint(ref m);
                         processed = true;
 
                         break;
-                    case Win32.WM_SIZE:
+                    case WindowsMessages.WM_SIZE:
                         OnWMSize(ref m);
                         break;
-                    case Win32.WM_ACTIVATEAPP:
-                        Win32.SendFrameChanged(Handle);
+                    case WindowsMessages.WM_ACTIVATEAPP:
+                        User32.SendFrameChanged(Handle);
                         break;
-                    case Win32.WM_NCHITTEST:
+                    case WindowsMessages.WM_NCHITTEST:
                         processed = OnWMNCHITTEST(ref m);
                         break;
-                    case Win32.WM_NCACTIVATE:
+                    case WindowsMessages.WM_NCACTIVATE:
                         processed = OnWMNCACTIVATE(ref m);
                         m.Result = Win32.MESSAGE_HANDLED;
-                        Win32.SendFrameChanged(Handle);
+                        User32.SendFrameChanged(Handle);
 
                         break;
-                    case Win32.WM_NCMOUSEMOVE:
+                    case WindowsMessages.WM_NCMOUSEMOVE:
                         processed = OnWMNCMOUSEMOVE(ref m);
-                        Win32.SendFrameChanged(Handle);
+                        User32.SendFrameChanged(Handle);
                         break;
-                    case Win32.WM_NCLBUTTONDOWN:
+                    case WindowsMessages.WM_NCLBUTTONDOWN:
                         processed = OnWMNCLBUTTONDOWN(ref m);
-                        Win32.SendFrameChanged(Handle);
+                        User32.SendFrameChanged(Handle);
 
                         break;
-                    case Win32.WM_NCLBUTTONUP:
+                    case WindowsMessages.WM_NCLBUTTONUP:
                         processed = OnWMNCLBUTTONUP(ref m);
-                        Win32.SendFrameChanged(Handle);
+                        User32.SendFrameChanged(Handle);
 
                         break;
-                    case Win32.WM_MOUSEMOVE:
+                    case WindowsMessages.WM_MOUSEMOVE:
                         if (_captured)
                             processed = OnWMMOUSEMOVE(ref m);
                         break;
-                    case Win32.WM_LBUTTONUP:
+                    case WindowsMessages.WM_LBUTTONUP:
                         if (_captured)
                             processed = OnWMLBUTTONUP(ref m);
                         break;
-                    case Win32.WM_NCMOUSELEAVE:
+                    case WindowsMessages.WM_NCMOUSELEAVE:
                         if (!_captured)
                             processed = OnWMNCMOUSELEAVE(ref m);
                         break;
-                    case Win32.WM_MOVE:
+                    case WindowsMessages.WM_MOVE:
                         OnWMMove(ref m);
                         break;
-                    case Win32.WM_ENTERSIZEMOVE:
-                        var rect = new Win32.RECT();
-                        Win32.GetWindowRect(Handle, ref rect);
+                    case WindowsMessages.WM_ENTERSIZEMOVE:
+                        var rect = new RECT();
+                        User32.GetWindowRect(Handle, ref rect);
                         isEnterSizeMoveMode = true;
                         break;
 
-                    case Win32.WM_EXITSIZEMOVE:
+                    case WindowsMessages.WM_EXITSIZEMOVE:
                         isEnterSizeMoveMode = false;
                         if (shadowDecorator != null && !shadowDecorator.IsEnabled)
                         {
@@ -1910,20 +1947,20 @@ namespace NetDimension.WinForm
                         }
                         break;
 
-                    case Win32.WM_SIZING:
+                    case WindowsMessages.WM_SIZING:
                         if (IsHandleCreated && isEnterSizeMoveMode == true && shadowDecorator.IsEnabled)
                         {
                             shadowDecorator.Enable(false);
                         }
                         break;
-                    case Win32.WM_NCLBUTTONDBLCLK:
+                    case WindowsMessages.WM_NCLBUTTONDBLCLK:
                         processed = OnWMNCLBUTTONDBLCLK(ref m);
                         break;
-                    case Win32.WM_SYSCOMMAND:
+                    case WindowsMessages.WM_SYSCOMMAND:
                         // Is this the command for closing the form?
                         var state = (int)m.WParam.ToInt64();
 
-                        if (state == Win32.SC_CLOSE)
+                        if (state == SystemCommandFlags.SC_CLOSE)
                         {
                             PropertyInfo pi = typeof(Form).GetProperty("CloseReason", BindingFlags.Instance | BindingFlags.SetProperty | BindingFlags.NonPublic);
 
@@ -1934,11 +1971,12 @@ namespace NetDimension.WinForm
                         if ((int)m.WParam.ToInt64() != 61696)
                             processed = OnPaintNonClient(ref m);
                         break;
-                    case 0x00AE:
-                    case 0xC1BC:
+                    case WindowsMessages.WM_NCUAHDRAWCAPTION:
+                    case WindowsMessages.WM_NCUAHDRAWFRAME:
+                    case WindowsMessages.WM_UNKNOWN_GHOST:
                         m.Result = (IntPtr)(0);
                         processed = true;
-                        Win32.SendFrameChanged(Handle);
+                        User32.SendFrameChanged(Handle);
 
                         break;
                 }
@@ -1975,8 +2013,8 @@ namespace NetDimension.WinForm
                 Rectangle bounds = FormBorderStyle == FormBorderStyle.None ? screen.Bounds : screen.WorkingArea;
 
 
-                Win32.RECT windowRect = new Win32.RECT();
-                Win32.GetWindowRect(Handle, ref windowRect);
+                RECT windowRect = new RECT();
+                User32.GetWindowRect(Handle, ref windowRect);
 
                 Rectangle formBounds = new Rectangle(windowRect.left, windowRect.top, windowRect.right - windowRect.left, windowRect.bottom - windowRect.top);
 
@@ -2022,7 +2060,7 @@ namespace NetDimension.WinForm
 
 
 
-                var ncCalcSizeParams = (Win32.NCCALCSIZE_PARAMS)Marshal.PtrToStructure(m.LParam, typeof(Win32.NCCALCSIZE_PARAMS));
+                var ncCalcSizeParams = (NCCALCSIZE_PARAMS)Marshal.PtrToStructure(m.LParam, typeof(NCCALCSIZE_PARAMS));
 
                 //if (SavedBorders == null)
                 //{
@@ -2120,17 +2158,17 @@ namespace NetDimension.WinForm
                 return;
             }
 
-            uint getDCEXFlags = Win32.DCX_WINDOW | Win32.DCX_CACHE | Win32.DCX_CLIPSIBLINGS /*| Win32.DCX_VALIDATE*/;
+            int getDCEXFlags = (int)(DCX.WINDOW | DCX.CACHE | DCX.CLIPSIBLINGS | DCX.VALIDATE);
             IntPtr hRegion = IntPtr.Zero;
 
             if (m.WParam != (IntPtr)1)
             {
-                getDCEXFlags |= Win32.DCX_INTERSECTRGN;
+                getDCEXFlags |= (int)DCX.INTERSECTRGN;
                 hRegion = m.WParam;
             }
 
 
-            IntPtr hDC = Win32.GetDCEx(Handle, hRegion, getDCEXFlags);
+            IntPtr hDC = User32.GetDCEx(Handle, hRegion, getDCEXFlags);
 
             try
             {
@@ -2147,7 +2185,7 @@ namespace NetDimension.WinForm
             }
             finally
             {
-                Win32.ReleaseDC(m.HWnd, hDC);
+                User32.ReleaseDC(m.HWnd, hDC);
             }
 
             m.Result = Win32.MESSAGE_PROCESS;
@@ -2240,20 +2278,20 @@ namespace NetDimension.WinForm
             // If we are not tracking when the mouse leaves the non-client window
             if (!_trackingMouse)
             {
-                Win32.TRACKMOUSEEVENTS tme = new Win32.TRACKMOUSEEVENTS();
+                TRACKMOUSEEVENTS tme = new TRACKMOUSEEVENTS();
 
                 // This structure needs to know its own size in bytes
-                tme.cbSize = (uint)Marshal.SizeOf(typeof(Win32.TRACKMOUSEEVENTS));
+                tme.cbSize = (uint)Marshal.SizeOf(typeof(TRACKMOUSEEVENTS));
                 tme.dwHoverTime = 100;
 
                 // We need to know then the mouse leaves the non client window area
-                tme.dwFlags = (int)(Win32.TME_LEAVE | Win32.TME_NONCLIENT);
+                tme.dwFlags = (int)(TMEFlags.TME_LEAVE | TMEFlags.TME_NONCLIENT);
 
                 // We want to track our own window
                 tme.hWnd = Handle;
 
                 // Call Win32 API to start tracking
-                Win32.TrackMouseEvent(ref tme);
+                User32.TrackMouseEvent(ref tme);
 
                 // Do not need to track again until mouse reenters the window
                 _trackingMouse = true;
@@ -2402,7 +2440,7 @@ namespace NetDimension.WinForm
         /// <returns></returns>
         protected virtual IntPtr WindowChromeHitTest(Point pt, bool composition)
         {
-            return (IntPtr)Win32.HTCLIENT;
+            return (IntPtr)HitTest.HTCLIENT;
         }
 
 
@@ -2413,8 +2451,8 @@ namespace NetDimension.WinForm
         /// <param name="bounds">Bounds enclosing the window chrome.</param>
         protected virtual void WindowChromePaint(Graphics g, Rectangle bounds)
         {
-
-            Win32.GetClientRect(Handle, out var clientRect);
+            RECT clientRect = new RECT();
+            User32.GetClientRect(Handle, ref clientRect);
             Rectangle clientBounds = new Rectangle(clientRect.left, clientRect.top, clientRect.right, clientRect.bottom);
             clientBounds.Offset(-clientBounds.Left, -clientBounds.Top);
             clientBounds.Offset(ClientMargin.Left, ClientMargin.Top);
