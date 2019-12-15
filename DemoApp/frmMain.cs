@@ -26,7 +26,7 @@ namespace DemoApp
 		public frmMain()
 		{
 			InitializeComponent();
-			//this.FormBorderStyle = FormBorderStyle.None;
+			//this.FormBorderStyle = FormBorderStyle.Sizable;
 			//this.WindowState = FormWindowState.Maximized;
 			//this.StartPosition = FormStartPosition.CenterScreen;
 		}

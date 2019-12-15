@@ -353,7 +353,7 @@ namespace NetDimension.WinForm
         private void HandleDpiChanged()
         {
 
-
+            currentDpi = User32.GetOriginalDeviceDpi(Handle);
 
             float scaleFactor = 1f;
 
@@ -469,7 +469,7 @@ namespace NetDimension.WinForm
 
             this.isMoving = false;
 
-            if (shouldScale)
+            if (shouldScale || ShouldPerformScaling())
             {
                 WriteConsoleLog($"[RESIZE END] {shouldScale} {DpiScaleFactor}");
 
@@ -485,7 +485,7 @@ namespace NetDimension.WinForm
         {
             base.OnMove(e);
 
-            if (this.shouldScale/* && CanPerformScaling()*/)
+            if (this.shouldScale)
             {
                 WriteConsoleLog($"[MOVE CHANGE] {shouldScale} {DpiScaleFactor}");
 
@@ -496,11 +496,26 @@ namespace NetDimension.WinForm
             }
         }
 
+
+        private bool ShouldPerformScaling()
+        {
+            var dpi = User32.GetOriginalDeviceDpi(Handle);
+
+            if(dpi != currentDpi)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         private bool CanPerformScaling()
         {
-            //Screen screen = Screen.FromHandle(Handle);
+            Screen screen = Screen.FromHandle(Handle);
 
-            Screen screen = Screen.FromPoint(Location);
+
+
+            //Screen screen = Screen.FromPoint(Location);
 
             if (screen.Bounds.Contains(this.Bounds))
             {
@@ -565,7 +580,7 @@ namespace NetDimension.WinForm
             if (control.Parent == null)
             {
                 control.Font = newFont;
-                WriteConsoleLog($"[FORM FONT CHANGED]:{oldFont.Size} -> {control.Font.Size} {control.Font.Unit}");
+                //WriteConsoleLog($"[FORM FONT CHANGED]:{oldFont.Size} -> {control.Font.Size} {control.Font.Unit}");
             }
             else if (control.Font != control.TopLevelControl.Font)
             {
@@ -573,7 +588,7 @@ namespace NetDimension.WinForm
                 control.Font = newFont;
 
 
-                WriteConsoleLog($"[CONTROL FONT CHANGED]:{oldFont.Size} -> {control.Font.Size} {control.Font.Unit}");
+                //WriteConsoleLog($"[CONTROL FONT CHANGED]:{oldFont.Size} -> {control.Font.Size} {control.Font.Unit}");
             }
 
 
@@ -748,75 +763,117 @@ namespace NetDimension.WinForm
 
         }
 
-        static readonly Dictionary<FormBorderStyle, Padding> StandardPaddings = new Dictionary<FormBorderStyle, Padding>
-        {
-            [FormBorderStyle.None] = new Padding(0, 0, 0, 0),
-            [FormBorderStyle.FixedSingle] = new Padding(3, 26, 3, 3),
-            [FormBorderStyle.Fixed3D] = new Padding(5, 28, 5, 5),
-            [FormBorderStyle.FixedDialog] = new Padding(3, 26, 3, 3),
-            [FormBorderStyle.Sizable] = new Padding(8, 31, 8, 8),
-            [FormBorderStyle.FixedToolWindow] = new Padding(3, 26, 3, 3),
-            [FormBorderStyle.SizableToolWindow] = new Padding(8, 31, 8, 8),
+        //static readonly Dictionary<FormBorderStyle, Padding> StandardPaddings = new Dictionary<FormBorderStyle, Padding>
+        //{
+        //    [FormBorderStyle.None] = new Padding(0, 0, 0, 0),
+        //    [FormBorderStyle.FixedSingle] = new Padding(3, 26, 3, 3),
+        //    [FormBorderStyle.Fixed3D] = new Padding(5, 28, 5, 5),
+        //    [FormBorderStyle.FixedDialog] = new Padding(3, 26, 3, 3),
+        //    [FormBorderStyle.Sizable] = new Padding(8, 31, 8, 8),
+        //    [FormBorderStyle.FixedToolWindow] = new Padding(3, 26, 3, 3),
+        //    [FormBorderStyle.SizableToolWindow] = new Padding(8, 31, 8, 8),
 
-        };
+        //};
+
+
 
         Padding ScalePadding(Padding value)
         {
 
+            var scaleFactor = 1f;
+            var hMonitor = User32.MonitorFromWindow(Handle, (uint)MonitorFromWindowFlags.MONITOR_DEFAULTTONEAREST);
 
+            try
+            {
+                User32.GetDpiForMonitor(hMonitor, MonitorDpiType.MDT_DEFAULT, out int dx, out int dy);
+
+                scaleFactor = dx / (float)designTimeDpi;
+            }
+            catch
+            {
+            }
+
+            
+
+            var standardScale = startupDpi / (float)designTimeDpi;
+
+            var standardBorder = (int)Math.Ceiling((value.Bottom - 2) / standardScale) + 2;
+            var standardCaption = (int)Math.Round((SystemInformation.CaptionHeight) / standardScale, MidpointRounding.AwayFromZero);
+            Padding result;
+
+            var border = (int)Math.Floor((standardBorder - 2) * scaleFactor) + 2;
+            var caption = (int)Math.Round((standardCaption) * scaleFactor, MidpointRounding.ToEven) + border;
+
+
+
+            result = new Padding(border, caption, border, border);
+
+            return result;
+
+            //var scaleFactor = dpi / (float)designTimeDpi;
+            //var paddings = StandardPaddings[FormBorderStyle]; //something incorect.
             //var captionHeight = SystemInformation.CaptionHeight;
             //var border3DSize = SystemInformation.Border3DSize;
             //var borderSize = SystemInformation.FixedFrameBorderSize;
 
             //var sizingBorderSize = SystemInformation.SizingBorderWidth;
 
-            var dpi = currentDpi;
 
-            var hMonitor = User32.MonitorFromWindow(Handle, (uint)MonitorFromWindowFlags.MONITOR_DEFAULTTONEAREST);
+            //var borderSize = SystemInformation.BorderSize;
+            //var frameBorder = SystemInformation.FrameBorderSize;
+            //var fixedBorder = SystemInformation.FixedFrameBorderSize;
+            //var threeD = SystemInformation.Border3DSize;
+            //var resizeBorder = SystemInformation.SizingBorderWidth;
 
-            try
-            {
-                //GetDpiForMonitor(hMonitor, MonitorDpiType.MDT_DEFAULT, out int x, out int y);
-                User32.GetDpiForMonitor(hMonitor, MonitorDpiType.MDT_DEFAULT, out int x, out int y);
-                dpi = x;
+            //var caption = 0;
+            //var border = 0;
 
-                WriteConsoleLog($"SCREEN DPI: {dpi}");
-            }
-            catch
-            {
-                
-            }
+            //if (scaleFactor < 1)
+            //{
+            //    caption = (int)Math.Floor(SystemInformation.CaptionHeight * scaleFactor);
+            //    border = (int)Math.Floor((double)value.Bottom * scaleFactor);
+            //}
+            //else
+            //{
+            //    caption = (int)Math.Ceiling(SystemInformation.CaptionHeight * scaleFactor);
+            //    border = (int)Math.Ceiling((double)value.Bottom * scaleFactor);
+            //}
 
-            var scaleFactor = dpi / (float)designTimeDpi;
-            var paddings = StandardPaddings[FormBorderStyle]; //something incorect.
+            //border = (int)(scaleFactor < 0f ? Math.Floor((value.Bottom - 2) * scaleFactor) : Math.Ceiling((value.Bottom - 2) * scaleFactor)) + 2;
 
-
-            Padding result;
-
-            switch (FormBorderStyle)
-            {
-
-                case FormBorderStyle.FixedSingle:
-                case FormBorderStyle.Fixed3D:
-                case FormBorderStyle.FixedDialog:
-                case FormBorderStyle.FixedToolWindow:
-                    result = new Padding(paddings.Left, (int)Math.Round((paddings.Top - paddings.Bottom) * scaleFactor, MidpointRounding.ToEven) + paddings.Bottom, paddings.Right, paddings.Bottom);
-                    break;
-                case FormBorderStyle.Sizable:
-                case FormBorderStyle.SizableToolWindow:
-                    result = new Padding(
-                        (int)((paddings.Left - 2) * scaleFactor + 2f),
-                        (int)((paddings.Top - 2) * scaleFactor + 2f),
-                        (int)((paddings.Right - 2) * scaleFactor + 2f),
-                        (int)((paddings.Bottom - 2) * scaleFactor + 2f));
-
-                    break;
-                default:
-                    return value;
-            }
+            //border = (int)Math.Ceiling((value.Bottom - 2) * scaleFactor) + 2;
 
 
-            return result;
+            //WriteConsoleLog($"Default:\t[C]{standardCaption} [B]{standardBorder}");
+            //WriteConsoleLog($"Scaled:\t\t[C]{caption-border} [B]{border}");
+
+
+
+
+
+            //switch (FormBorderStyle)
+            //{
+
+            //    case FormBorderStyle.FixedSingle:
+            //    case FormBorderStyle.Fixed3D:
+            //    case FormBorderStyle.FixedDialog:
+            //    case FormBorderStyle.FixedToolWindow:
+            //        result = new Padding(paddings.Left, (int)Math.Round((paddings.Top - paddings.Bottom) * scaleFactor, MidpointRounding.ToEven) + paddings.Bottom, paddings.Right, paddings.Bottom);
+            //        break;
+            //    case FormBorderStyle.Sizable:
+            //    case FormBorderStyle.SizableToolWindow:
+            //        result = new Padding(
+            //            (int)((paddings.Left - 2) * scaleFactor + 2f),
+            //            (int)((paddings.Top - 2) * scaleFactor + 2f),
+            //            (int)((paddings.Right - 2) * scaleFactor + 2f),
+            //            (int)((paddings.Bottom - 2) * scaleFactor + 2f));
+
+            //        break;
+            //    default:
+            //        return value;
+            //}
+
+
 
 
         }
@@ -1848,7 +1905,7 @@ namespace NetDimension.WinForm
             return new Size(rect.right, rect.bottom);
         }
 
- 
+
         #endregion
 
         /// <summary>
