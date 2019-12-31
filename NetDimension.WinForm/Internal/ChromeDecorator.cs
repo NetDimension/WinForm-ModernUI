@@ -230,6 +230,7 @@ namespace NetDimension.WinForm
 
             cachedImages = new Bitmap[3];
             cachedImages[0] = Properties.Resources.ShadowTemplate;
+
             InitializeBitmapCache();
         }
 
@@ -381,7 +382,7 @@ namespace NetDimension.WinForm
             {
                 User32.SendMessage(parentWindowHWnd, (uint)WindowsMessages.WM_SYSCOMMAND, (IntPtr)(GetSizeMode(e.Mode)), IntPtr.Zero);
             }
-            
+
         }
 
 
@@ -564,7 +565,7 @@ namespace NetDimension.WinForm
         }
 
 
-        #region Dispose
+#region Dispose
 
         private bool _isDisposed;
 
@@ -610,7 +611,7 @@ namespace NetDimension.WinForm
             }
         }
 
-        #endregion
+#endregion
 
     }
 }
