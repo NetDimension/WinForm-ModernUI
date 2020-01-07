@@ -147,9 +147,32 @@ namespace NetDimension.WinForm
 
         private void GetDpiForScreen(System.Windows.Forms.Screen screen, DpiType dpiType, out uint dpiX, out uint dpiY)
         {
-            var pnt = new System.Drawing.Point(screen.Bounds.Left + 1, screen.Bounds.Top + 1);
-            var mon = MonitorFromPoint(pnt, 2/*MONITOR_DEFAULTTONEAREST*/);
-            GetDpiForMonitor(mon, dpiType, out dpiX, out dpiY);
+            try
+            {
+                var pnt = new System.Drawing.Point(screen.Bounds.Left + 1, screen.Bounds.Top + 1);
+                var mon = MonitorFromPoint(pnt, 2/*MONITOR_DEFAULTTONEAREST*/);
+                GetDpiForMonitor(mon, dpiType, out dpiX, out dpiY);
+            }
+            catch
+            {
+
+                Graphics g = this.CreateGraphics();
+
+                try
+                {
+                    dpiX = (uint)g.DpiX;
+                    dpiY = (uint)g.DpiY;
+                }
+                catch
+                {
+                    dpiX = 96;
+                    dpiY = 96;
+                }
+                finally
+                {
+                    g.Dispose();
+                }
+            }
         }
 
         #endregion
