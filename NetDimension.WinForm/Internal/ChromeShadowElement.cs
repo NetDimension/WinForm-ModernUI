@@ -130,15 +130,11 @@ namespace NetDimension.WinForm
         internal void UpdateZOrder(int left, int top, int flags)
         {
             User32.SetWindowPos(_handle, !IsTopMost ? _noTopMost : _yesTopMost, left, top, 0, Size, (SetWindowPosFlags)flags);
-
-            User32.SetWindowPos(_handle, _parentHandle, 0, 0, 0, Size, NoSizeNoMove | SetWindowPosFlags.SWP_NOACTIVATE);
-
         }
 
         internal void UpdateZOrder()
         {
             User32.SetWindowPos(_handle, !IsTopMost ? _noTopMost : _yesTopMost, 0, 0, 0, Size, NoSizeNoMove | SetWindowPosFlags.SWP_NOACTIVATE);
-            User32.SetWindowPos(_handle, _parentHandle, 0, 0, 0, 0, SetWindowPosFlags.SWP_NOMOVE | SetWindowPosFlags.SWP_NOSIZE);
         }
 
 
@@ -164,6 +160,7 @@ namespace NetDimension.WinForm
                     needRefresh = true;
                 }
                 _parentWindowIsFocused = value;
+                User32.SetWindowPos(_handle, _parentHandle, 0, 0, 0, Size, NoSizeNoMove | SetWindowPosFlags.SWP_NOACTIVATE);
 
                 if (needRefresh)
                     Render();
